@@ -1,0 +1,13 @@
+data/
+logs/
+containers/
+*.rds
+*.idat
+*.idat.gz
+*.tar
+*.xlsx
+*.swp
+.RData
+.Rhistory
+typescript
+results/

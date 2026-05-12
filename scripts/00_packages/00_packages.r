@@ -1,0 +1,8 @@
+# Packages needed before validation starts
+
+library(readxl)
+library(stringr)
+library(matrixStats)
+library(minfi)
+library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+library(IlluminaHumanMethylation450kmanifest)
