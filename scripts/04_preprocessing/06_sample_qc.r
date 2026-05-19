@@ -30,6 +30,7 @@ sample_qc$failed_probe_fraction <- sample_qc$failed_probes / sample_qc$total_pro
 
 # Flag samples where more than 1% of probes failed detection.
 # This only flags samples for review; removal happens in the next stage.
+# The 1% threshold is a common cutoff in methylation data QC,
 sample_qc$sample_qc_status <- ifelse(
   sample_qc$failed_probe_fraction > 0.01,
   "fail",

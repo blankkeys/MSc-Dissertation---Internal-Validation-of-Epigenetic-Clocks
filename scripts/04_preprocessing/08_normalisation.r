@@ -20,17 +20,4 @@ mSet_noob <- preprocessNoob(rgSet)
 # Save the normalised object for post-normalisation exploration and filtering.
 saveRDS(mSet_noob, "data/GSE87571/mset_normalised.rds")
 
-# Save a simple summary of the normalisation step.
-normalisation_summary <- data.frame(
-  method = "preprocessNoob",
-  input_object = "data/GSE87571/rgset_raw.rds",
-  output_object = "data/GSE87571/mset_normalised.rds",
-  samples = ncol(mSet_noob),
-  features = nrow(mSet_noob)
-)
 
-write.csv(
-  normalisation_summary,
-  "results/qc/normalisation_summary.csv",
-  row.names = FALSE
-)

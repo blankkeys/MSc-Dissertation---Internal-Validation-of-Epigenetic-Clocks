@@ -16,4 +16,3 @@ detp_qc_pass <- detp[, samples_to_keep]
 
 saveRDS(rgSet_qc_pass, "data/GSE87571/rgset_qc_pass.rds")
 saveRDS(detp_qc_pass, "data/GSE87571/sample_detection_pvalues_qc_pass.rds")
-
