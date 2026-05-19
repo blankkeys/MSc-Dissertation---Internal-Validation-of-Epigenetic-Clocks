@@ -1,0 +1,23 @@
+# Large project data and generated outputs
+data/
+results/
+logs/
+containers/*.sif
+
+# R objects and session files
+*.rds
+*.RData
+*.Rhistory
+
+# Raw methylation array files and archives
+*.idat
+*.idat.gz
+*.tar
+*.tar.gz
+*.gz
+*.xlsx
+
+# Temporary/editor files
+*.swp
+*.tmp
+typescript
