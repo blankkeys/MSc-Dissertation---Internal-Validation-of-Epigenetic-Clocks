@@ -33,70 +33,54 @@ mdsPlot(
 )
 dev.off()
 
-# Check whether sex metadata is present in the methylation object or sample sheet.
-metadata <- as.data.frame(pData(mSet), check.names = FALSE)
-metadata$sample_id <- rownames(metadata)
-metadata$geo_accession <- sub("_.*$", "", metadata$sample_id)
+# Read sex metadata from the GEO Series Matrix.
+series_lines <- readLines(gzfile("data/GSE87571/GSE87571_series_matrix.txt.gz"))
 
-sex_columns <- names(metadata)[grepl("sex|gender", names(metadata), ignore.case = TRUE)]
+geo_line <- series_lines[grepl("^!Sample_geo_accession", series_lines)][1]
+gender_line <- series_lines[grepl("gender:", series_lines, ignore.case = TRUE)][1]
 
-# If sex is not stored inside the MethylationSet object, check the matched sample sheet.
-if (length(sex_columns) == 0 && file.exists("data/GSE87571/qc_ready_sample_sheet.csv")) {
-  sample_sheet <- read.csv("data/GSE87571/qc_ready_sample_sheet.csv", check.names = FALSE)
-  sample_sheet_sex_columns <- names(sample_sheet)[grepl("sex|gender", names(sample_sheet), ignore.case = TRUE)]
+geo_accessions <- gsub('"', "", regmatches(geo_line, gregexpr('"[^"]+"', geo_line))[[1]])
+sex_values <- gsub('"', "", regmatches(gender_line, gregexpr('"[^"]+"', gender_line))[[1]])
 
-  if (length(sample_sheet_sex_columns) > 0) {
-    sex_column <- sample_sheet_sex_columns[1]
-    sex_metadata <- data.frame(
-      geo_accession = sample_sheet[["geo accession"]],
-      sex = sample_sheet[[sex_column]]
-    )
-    metadata <- merge(metadata, sex_metadata, by = "geo_accession", all.x = TRUE)
-  }
-} else if (length(sex_columns) > 0) {
-  sex_column <- sex_columns[1]
-  metadata$sex <- metadata[[sex_column]]
-}
+sex_metadata <- data.frame(
+  geo_accession = geo_accessions,
+  sex = sex_values
+)
 
-if ("sex" %in% names(metadata)) {
-  # Standardise sex labels so counts and colours are consistent.
-  metadata$sex <- tolower(trimws(gsub("sex:|gender:", "", metadata$sex, ignore.case = TRUE)))
-  metadata$sex[metadata$sex %in% c("m", "male")] <- "male"
-  metadata$sex[metadata$sex %in% c("f", "female")] <- "female"
+sample_metadata <- data.frame(
+  sample_id = colnames(beta_values),
+  geo_accession = sub("_.*$", "", colnames(beta_values))
+)
 
-  sex_summary <- as.data.frame(table(metadata$sex, useNA = "ifany"))
-  names(sex_summary) <- c("sex", "sample_count")
+metadata <- merge(sample_metadata, sex_metadata, by = "geo_accession", all.x = TRUE)
 
-  write.csv(
-    sex_summary,
-    "results/qc/sex_metadata_summary.csv",
-    row.names = FALSE
-  )
+# Standardise sex labels.
+metadata$sex <- tolower(trimws(gsub("sex:|gender:", "", metadata$sex, ignore.case = TRUE)))
+metadata$sex[metadata$sex %in% c("m", "male")] <- "male"
+metadata$sex[metadata$sex %in% c("f", "female")] <- "female"
 
-  sex_for_beta <- metadata$sex[match(colnames(beta_values), metadata$sample_id)]
-  samples_with_sex <- !is.na(sex_for_beta) & sex_for_beta != ""
+sex_summary <- as.data.frame(table(metadata$sex, useNA = "ifany"))
+names(sex_summary) <- c("sex", "sample_count")
 
-  if (length(unique(sex_for_beta[samples_with_sex])) > 1) {
-    # Create an MDS plot coloured by sex to check whether sex explains sample clustering.
-    beta_values_with_sex <- beta_values[, samples_with_sex]
-    sex_factor <- factor(sex_for_beta[samples_with_sex])
+write.csv(
+  sex_summary,
+  "results/qc/sex_metadata_summary.csv",
+  row.names = FALSE
+)
 
-    pdf("results/qc/post_filtering_mds_by_sex.pdf")
-    mdsPlot(
-      beta_values_with_sex,
-      numPositions = 10000,
-      sampGroups = sex_factor,
-      main = "Post-filtering MDS plot by sex"
-    )
-    dev.off()
-  }
-} else {
-  # If sex metadata is absent, record that clearly rather than guessing sex.
-  writeLines(
-    "No sex or gender metadata column was found in the methylation object or qc_ready_sample_sheet.csv.",
-    "results/qc/sex_metadata_summary.txt"
-  )
-}
+# Save an MDS plot coloured by sex.
+sex_for_beta <- metadata$sex[match(colnames(beta_values), metadata$sample_id)]
+beta_values_with_sex <- beta_values[, !is.na(sex_for_beta)]
+sex_factor <- factor(sex_for_beta[!is.na(sex_for_beta)])
+
+pdf("results/qc/post_filtering_mds_by_sex.pdf")
+mdsPlot(
+  beta_values_with_sex,
+  numPositions = 10000,
+  sampGroups = sex_factor,
+  main = "Post-filtering MDS plot by sex"
+)
+dev.off()
 
 # Save summary statistics for the filtered beta values.
 post_filtering_summary <- data.frame(
