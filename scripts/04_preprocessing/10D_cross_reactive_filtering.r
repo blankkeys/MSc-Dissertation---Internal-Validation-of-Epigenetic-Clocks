@@ -12,7 +12,7 @@ annotation <- read.delim(annotation_file, stringsAsFactors = FALSE, check.names 
 # Inspect the annotation columns in the Slurm log.
 print(names(annotation))
 
-probe_id_column <- "Probe_ID"
+probe_id_column <- "probeID"
 mask_column <- "MASK_general"
 
 if (!probe_id_column %in% names(annotation)) {
