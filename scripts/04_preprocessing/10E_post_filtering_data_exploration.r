@@ -26,7 +26,7 @@ dev.off()
 # Save an MDS plot, following the Bioconductor methylation workflow style.
 pdf("results/qc/post_filtering_mds_plot.pdf")
 mdsPlot(
-  mSet,
+  beta_values,
   numPositions = 10000,
   sampGroups = NULL,
   main = "Post-filtering MDS plot"
@@ -78,12 +78,12 @@ if ("sex" %in% names(metadata)) {
 
   if (length(unique(sex_for_beta[samples_with_sex])) > 1) {
     # Create an MDS plot coloured by sex to check whether sex explains sample clustering.
-    mSet_with_sex <- mSet[, samples_with_sex]
+    beta_values_with_sex <- beta_values[, samples_with_sex]
     sex_factor <- factor(sex_for_beta[samples_with_sex])
 
     pdf("results/qc/post_filtering_mds_by_sex.pdf")
     mdsPlot(
-      mSet_with_sex,
+      beta_values_with_sex,
       numPositions = 10000,
       sampGroups = sex_factor,
       main = "Post-filtering MDS plot by sex"
