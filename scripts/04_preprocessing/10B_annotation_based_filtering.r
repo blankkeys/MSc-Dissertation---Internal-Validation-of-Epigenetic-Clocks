@@ -10,8 +10,11 @@ mSet <- readRDS("data/GSE87571/mset_normalised_filtered.rds")
 
 probes_before <- nrow(mSet)
 
+# Add genomic annotation so minfi can identify SNP-affected probes.
+mSet_genomic <- mapToGenome(mSet)
+
 # Remove probes affected by known SNPs using minfi annotation.
-mSet_filtered <- dropLociWithSnps(mSet)
+mSet_filtered <- dropLociWithSnps(mSet_genomic)
 
 snp_removed_probes <- setdiff(rownames(mSet), rownames(mSet_filtered))
 
