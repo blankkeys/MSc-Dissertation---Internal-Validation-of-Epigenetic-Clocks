@@ -21,8 +21,8 @@ geo_metadata <- pData(gse)
 
 series_metadata <- data.frame(
   geo_accession = rownames(geo_metadata),
-  age = as.numeric(sub("age: ", "", geo_metadata$characteristics_ch1)),
-  sex = tolower(sub("gender: ", "", geo_metadata$characteristics_ch1.1))
+  age = as.numeric(sub("age: ", "", geo_metadata$characteristics_ch1.1)),
+  sex = tolower(sub("gender: ", "", geo_metadata$characteristics_ch1))
 )
 
 # Match age and sex to the beta matrix samples using the GEO accession.
