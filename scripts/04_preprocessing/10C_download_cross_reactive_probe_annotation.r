@@ -1,5 +1,5 @@
 # Download updated HM450 probe annotation from Zhou/InfiniumAnnotation.
-# This is used later for annotation-based probe filtering.
+# This is used later for cross-reactive probe filtering.
 # It is not methylation data; it is a platform annotation resource.
 
 annotation_dir <- "data/annotation"

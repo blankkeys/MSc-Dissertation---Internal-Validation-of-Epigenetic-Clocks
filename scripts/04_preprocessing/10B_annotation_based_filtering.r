@@ -1,7 +1,7 @@
 # SNP-based probe filtering for GSE87571
-# This script follows the Bioconductor methylation workflow style.
-# It uses minfi::dropLociWithSnps() to remove probes affected by known SNPs.
-# Detection p-value filtering was already completed in Stage 10A.
+# This script removes probes where known SNPs may affect the methylation signal.
+# SNPs at or near probe target sites can change probe binding or apparent methylation.
+# minfi::dropLociWithSnps() uses the array annotation to remove these affected probes.
 
 library(minfi)
 
