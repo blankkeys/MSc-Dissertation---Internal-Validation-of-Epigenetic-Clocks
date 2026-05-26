@@ -1,25 +1,18 @@
 # Elastic-net age prediction model for GSE87571
 # Train an epigenetic clock using age-available samples.
 
-# glmnet is the R package for fitting regularized regression models,
-# including elastic-net regression, which combines L1 and L2 penalties to perform 
-# variable selection and regularization. In this script, we will use glmnet to train 
-# an elastic-net model to predict age based on DNA methylation data.
 library(glmnet)
 
 # set seed makes the random processes in glmnet reproducible,
 # so we get the same model each time we run this script
-set.seed(123) 
+set.seed(123)
 
 beta_matrix <- readRDS("data/GSE87571/beta_matrix_age_model.rds")
 metadata <- read.csv("data/GSE87571/modelling_metadata_age_model.csv")
 
 # Match beta matrix columns to metadata rows.
-sample_match <- match(metadata$sample_id, colnames(beta_matrix))
-beta_matrix <- beta_matrix[, sample_match]
-
 # glmnet expects samples as rows and CpG sites as columns.
-x <- t(beta_matrix)
+x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 y <- metadata$age
 
 # Train the elastic-net model.

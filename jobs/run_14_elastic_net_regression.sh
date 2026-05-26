@@ -15,4 +15,4 @@ cd /data/home/bt25127/Msc_Dissertation
 mkdir -p logs
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/06_modelling/14_elastic_net_regression.r
+  Rscript scripts/06_elastic_net_modelling/14_elastic_net_regression.r
