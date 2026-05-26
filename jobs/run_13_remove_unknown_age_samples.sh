@@ -15,4 +15,4 @@ cd /data/home/bt25127/Msc_Dissertation
 mkdir -p logs
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/05/13_remove_unknown_age_samples.r
+  Rscript scripts/05_modelling_preparation/13_remove_unknown_age_samples.r
