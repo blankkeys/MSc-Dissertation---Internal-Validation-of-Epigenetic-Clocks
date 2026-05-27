@@ -19,11 +19,11 @@ train_metadata <- training(metadata_split)
 test_metadata <- testing(metadata_split)
 
 # Match beta matrix columns to metadata rows for training and test sets
-x_train <- x[train_metadata$sample_id, ]
-y_train <- train_metadata$age
+x_train <- x[train_metadata$sample_id, ] #x_train is the training data matrix with samples as rows and CpG sites as columns
+y_train <- train_metadata$age # y_train is the vector of ages corresponding to the training samples
 
-x_test <- x[test_metadata$sample_id, ]
-y_test <- test_metadata$age
+x_test <- x[test_metadata$sample_id, ] # x_test is the test data matrix with samples as rows and CpG sites as columns
+y_test <- test_metadata$age # y_test is the vector of ages corresponding to the test samples
 
 # Train the elastic-net model using the training samples only.
 train_test_model <- cv.glmnet(

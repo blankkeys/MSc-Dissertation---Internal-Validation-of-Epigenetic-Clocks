@@ -24,6 +24,7 @@ for (i in seq_len(nrow(metadata_splits))) {
   train_metadata <- analysis(metadata_splits$splits[[i]])
   test_metadata <- assessment(metadata_splits$splits[[i]])
 
+# Match beta matrix columns to metadata rows for training and test sets
   x_train <- x[train_metadata$sample_id, ]
   y_train <- train_metadata$age
 
@@ -68,6 +69,7 @@ for (i in seq_len(nrow(metadata_splits))) {
 # Summarise performance across all splits
 performance_summary <- data.frame(
   repeats = nrow(all_performance),
+  cpgs = ncol(x),
   mean_mae = mean(all_performance$mae),
   sd_mae = sd(all_performance$mae),
   mean_median_absolute_error = mean(all_performance$median_absolute_error),
