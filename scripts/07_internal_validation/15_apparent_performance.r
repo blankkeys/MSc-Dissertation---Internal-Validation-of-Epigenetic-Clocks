@@ -51,14 +51,3 @@ write.csv(
   row.names = FALSE
 )
 
-pdf("results/internal_validation/apparent_performance_predicted_vs_actual_age.pdf")
-plot(
-  y,
-  predicted_age,
-  xlab = "Chronological age",
-  ylab = "Predicted age",
-  main = "Apparent performance",
-  pch = 16
-)
-abline(0, 1, col = "red")
-dev.off()

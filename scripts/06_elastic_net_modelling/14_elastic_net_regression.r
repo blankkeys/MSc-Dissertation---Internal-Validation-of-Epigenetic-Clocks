@@ -20,7 +20,7 @@ y <- metadata$age
 elastic_net_model <- cv.glmnet(
   x = x,
   y = y,
-  alpha = 0.5,
+  alpha = 0.5, # hovarth clock used alpha 0.5
   family = "gaussian" # gaussian family for regression (age prediction)
 )
 
