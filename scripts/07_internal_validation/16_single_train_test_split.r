@@ -13,9 +13,9 @@ metadata <- read.csv("data/GSE87571/modelling_metadata_age_model.csv")
 x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 
 # Use 80% of samples for training and 20% for testing.
-data_split <- initial_split(metadata, prop = 0.8)
-train_metadata <- training(data_split)
-test_metadata <- testing(data_split)
+metadata_split <- initial_split(metadata, prop = 0.8)
+train_metadata <- training(metadata_split)
+test_metadata <- testing(metadata_split)
 
 x_train <- x[train_metadata$sample_id, ]
 y_train <- train_metadata$age
