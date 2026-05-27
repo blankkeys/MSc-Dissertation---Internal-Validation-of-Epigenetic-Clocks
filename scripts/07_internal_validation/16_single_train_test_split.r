@@ -57,7 +57,8 @@ train_test_predictions <- data.frame(
 train_test_performance <- data.frame(
   training_samples = length(y_train),
   test_samples = length(y_test),
-  cpgs = ncol(x),
+  input_cpgs = ncol(x),
+  selected_cpgs = sum(coef(train_test_model, s = "lambda.min")[-1, ] != 0),
   mae = mean(abs(predicted_age - y_test)),
   median_absolute_error = median(abs(predicted_age - y_test)),
   rmse = sqrt(mean((predicted_age - y_test)^2)),

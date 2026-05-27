@@ -53,7 +53,8 @@ for (i in seq_len(nrow(metadata_splits))) {
     split = metadata_splits$id[i],
     training_samples = length(y_train),
     test_samples = length(y_test),
-    cpgs = ncol(x),
+    input_cpgs = ncol(x),
+    selected_cpgs = sum(coef(repeated_train_test_model, s = "lambda.min")[-1, ] != 0),
     mae = mean(abs(predicted_age - y_test)),
     median_absolute_error = median(abs(predicted_age - y_test)),
     rmse = sqrt(mean((predicted_age - y_test)^2)),
@@ -69,7 +70,11 @@ for (i in seq_len(nrow(metadata_splits))) {
 # Summarise performance across all splits
 performance_summary <- data.frame(
   repeats = nrow(all_performance),
-  cpgs = ncol(x),
+  input_cpgs = ncol(x),
+  mean_selected_cpgs = mean(all_performance$selected_cpgs),
+  sd_selected_cpgs = sd(all_performance$selected_cpgs),
+  min_selected_cpgs = min(all_performance$selected_cpgs),
+  max_selected_cpgs = max(all_performance$selected_cpgs),
   mean_mae = mean(all_performance$mae),
   sd_mae = sd(all_performance$mae),
   mean_median_absolute_error = mean(all_performance$median_absolute_error),
