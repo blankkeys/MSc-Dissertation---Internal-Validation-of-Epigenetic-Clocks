@@ -1,20 +1,19 @@
-# This script extracts the beta matrix from the filtered MethylationSet 
-# object and saves it for downstream analysis
-# It also performs some basic checks on the beta matrix and saves a summary of its properties
+# This script extracts the final beta matrix from the filtered MethylationSet object.
+# It checks the matrix is suitable for downstream modelling.
 
-library (minfi)
+library(minfi)
 
 # Load the filtered MethylationSet object after detection, annotation,
 # cross-reactive, and autosomal probe filtering.
 filtered_mset_file <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive_autosomal.rds")
 
-# Check that the loaded object is a MethylationSet and has the expected dimensions
+# Check the dimensions of the final filtered object.
 print(dim(filtered_mset_file))
 
-# Extract the beta matrix from the filtered MethylationSet object
+# Extract the beta matrix from the final filtered object.
 beta_matrix <- getBeta(filtered_mset_file)
 
-# Perform checks on the beta matrix
+# Check for missing, duplicated, infinite, or out-of-range values.
 missing_value_count <- sum(is.na(beta_matrix))
 duplicate_probe_count <- sum(duplicated(rownames(beta_matrix)))
 duplicate_sample_count <- sum(duplicated(colnames(beta_matrix)))
@@ -24,7 +23,7 @@ outside_range_count <- sum(beta_matrix < 0 | beta_matrix > 1, na.rm = TRUE)
 min_beta_value <- min(beta_matrix, na.rm = TRUE)
 max_beta_value <- max(beta_matrix, na.rm = TRUE)
 
-# Save the beta matrix as an RDS file for downstream analysis
+# Save the beta matrix for downstream modelling.
 saveRDS(beta_matrix, "data/GSE87571/beta_matrix.rds")
 
 # Save summary of the final matrix.
@@ -34,8 +33,8 @@ final_matrix_summary <- data.frame(
   missing_value_count = missing_value_count,
   duplicate_probe_id_count = duplicate_probe_count,
   duplicate_sample_id_count = duplicate_sample_count,
-  infinite_value_count = infinite_value_count, # saftey, if 0 then beta matrix is valid
-  values_outside_0_1_count = outside_range_count, # saftey, if 0 then beta matrix is valid
+  infinite_value_count = infinite_value_count,
+  values_outside_0_1_count = outside_range_count,
   minimum_beta_value = min_beta_value,
   maximum_beta_value = max_beta_value
 )
