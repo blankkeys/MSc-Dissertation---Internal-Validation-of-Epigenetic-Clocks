@@ -34,7 +34,9 @@ apparent_performance <- data.frame(
   samples = length(y),
   cpgs = ncol(x),
   mae = mean(abs(predicted_age - y)),
+  median_absolute_error = median(abs(predicted_age - y)),
   rmse = sqrt(mean((predicted_age - y)^2)),
+  mean_error = mean(predicted_age - y),
   correlation = cor(predicted_age, y),
   r_squared = cor(predicted_age, y)^2
 )
@@ -50,4 +52,3 @@ write.csv(
   "results/internal_validation/apparent_performance_summary.csv",
   row.names = FALSE
 )
-

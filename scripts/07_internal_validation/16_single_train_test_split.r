@@ -54,7 +54,9 @@ train_test_performance <- data.frame(
   test_samples = length(y_test),
   cpgs = ncol(x),
   mae = mean(abs(predicted_age - y_test)),
+  median_absolute_error = median(abs(predicted_age - y_test)),
   rmse = sqrt(mean((predicted_age - y_test)^2)),
+  mean_error = mean(predicted_age - y_test),
   correlation = cor(predicted_age, y_test),
   r_squared = cor(predicted_age, y_test)^2
 )
