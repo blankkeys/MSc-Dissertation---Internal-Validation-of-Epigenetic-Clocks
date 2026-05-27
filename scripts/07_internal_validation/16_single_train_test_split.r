@@ -13,10 +13,12 @@ metadata <- read.csv("data/GSE87571/modelling_metadata_age_model.csv")
 x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 
 # Use 80% of samples for training and 20% for testing.
-metadata_split <- initial_split(metadata, prop = 0.8)
+# Stratify by age so training and test sets have similar age distributions.
+metadata_split <- initial_split(metadata, prop = 0.8, strata = age)
 train_metadata <- training(metadata_split)
 test_metadata <- testing(metadata_split)
 
+# Match beta matrix columns to metadata rows for training and test sets
 x_train <- x[train_metadata$sample_id, ]
 y_train <- train_metadata$age
 
@@ -38,8 +40,10 @@ predicted_age <- predict(
   s = "lambda.min"
 )
 
+# Convert predicted age to numeric vector for performance calculations
 predicted_age <- as.numeric(predicted_age)
 
+# Create a data frame with predictions and errors for the test set
 train_test_predictions <- data.frame(
   sample_id = test_metadata$sample_id,
   geo_accession = test_metadata$geo_accession,
@@ -49,6 +53,7 @@ train_test_predictions <- data.frame(
   absolute_error = abs(predicted_age - y_test)
 )
 
+# Create a data frame summarising performance metrics for this single train-test split
 train_test_performance <- data.frame(
   training_samples = length(y_train),
   test_samples = length(y_test),
