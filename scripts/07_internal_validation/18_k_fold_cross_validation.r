@@ -1,5 +1,5 @@
 # K-fold cross-validation for the elastic-net age prediction model
-# This trains and tests the model across 10 age-stratified folds.
+# This trains and tests the model across 10 age-stratified folds
 
 library(glmnet)
 library(rsample)
@@ -9,10 +9,10 @@ set.seed(123)
 beta_matrix <- readRDS("data/GSE87571/beta_matrix_age_model.rds")
 metadata <- read.csv("data/GSE87571/modelling_metadata_age_model.csv")
 
-# glmnet expects samples as rows and CpG sites as columns.
+# glmnet expects samples as rows and CpG sites as columns
 x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 
-# Create 10 folds, stratified by age.
+# Create 10 folds, stratified by age
 # v = 10 is the number of folds, and strata = age ensures similar age distributions in each fold
 metadata_folds <- vfold_cv(metadata, v = 10, strata = age)
 
@@ -76,6 +76,7 @@ for (i in seq_len(nrow(metadata_folds))) {
 
 k_fold_summary <- data.frame(
   folds = nrow(all_performance),
+  cpgs = ncol(x),
   mean_mae = mean(all_performance$mae),
   sd_mae = sd(all_performance$mae),
   mean_median_absolute_error = mean(all_performance$median_absolute_error),

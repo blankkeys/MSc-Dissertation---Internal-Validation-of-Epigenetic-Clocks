@@ -1,5 +1,5 @@
 # Repeated train-test split validation for the elastic-net age prediction model
-# This repeats random 80:20 train-test splits using Monte Carlo cross-validation.
+# This repeats random 80:20 train-test splits using Monte Carlo cross-validation
 
 library(glmnet)
 library(rsample)
@@ -9,11 +9,11 @@ set.seed(123)
 beta_matrix <- readRDS("data/GSE87571/beta_matrix_age_model.rds")
 metadata <- read.csv("data/GSE87571/modelling_metadata_age_model.csv")
 
-# glmnet expects samples as rows and CpG sites as columns.
+# glmnet expects samples as rows and CpG sites as columns
 x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 
-# Create repeated 80:20 train-test splits.
-# Stratify by age so training and test sets have similar age distributions.
+# Create repeated 80:20 train-test splits
+# Stratify by age so training and test sets have similar age distributions
 metadata_splits <- mc_cv(metadata, prop = 0.8, times = 10, strata = age)
 
 # data frame to store performance metrics for each split
@@ -31,7 +31,7 @@ for (i in seq_len(nrow(metadata_splits))) {
   x_test <- x[test_metadata$sample_id, ]
   y_test <- test_metadata$age
 
-  # Train the elastic-net model using the training samples only.
+  # Train the elastic-net model using the training samples only
   repeated_train_test_model <- cv.glmnet(
     x = x_train,
     y = y_train,
@@ -39,7 +39,7 @@ for (i in seq_len(nrow(metadata_splits))) {
     family = "gaussian"
   )
 
-  # Predict age in the held-out test samples.
+  # Predict age in the held-out test samples
   predicted_age <- predict(
     repeated_train_test_model,
     newx = x_test,

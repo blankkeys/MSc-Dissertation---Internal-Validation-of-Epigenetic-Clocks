@@ -1,5 +1,5 @@
 # Single train-test split validation for the elastic-net age prediction model
-# This trains the model on one subset and tests it on held-out samples.
+# This trains the model on one subset and tests it on held-out samples
 
 library(glmnet)
 library(rsample)
@@ -9,11 +9,11 @@ set.seed(123)
 beta_matrix <- readRDS("data/GSE87571/beta_matrix_age_model.rds")
 metadata <- read.csv("data/GSE87571/modelling_metadata_age_model.csv")
 
-# glmnet expects samples as rows and CpG sites as columns.
+# glmnet expects samples as rows and CpG sites as columns
 x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 
-# Use 80% of samples for training and 20% for testing.
-# Stratify by age so training and test sets have similar age distributions.
+# Use 80% of samples for training and 20% for testing
+# Stratify by age so training and test sets have similar age distributions
 metadata_split <- initial_split(metadata, prop = 0.8, strata = age)
 train_metadata <- training(metadata_split)
 test_metadata <- testing(metadata_split)
@@ -33,7 +33,7 @@ train_test_model <- cv.glmnet(
   family = "gaussian"
 )
 
-# Predict age in the held-out test samples.
+# Predict age in the held-out test samples
 predicted_age <- predict(
   train_test_model,
   newx = x_test,
