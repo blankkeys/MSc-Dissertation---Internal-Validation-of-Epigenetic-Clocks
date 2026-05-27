@@ -1,6 +1,6 @@
-# Autosomal post-filtering data exploration for GSE87571
-# This removes X/Y chromosome probes for exploratory MDS plots only.
-# The main filtered methylation object is not overwritten.
+# Autosomal filtering and post-filtering data exploration for GSE87571
+# This removes probes annotated outside chromosomes 1-22.
+# The autosomal object is saved for downstream beta matrix extraction.
 
 library(minfi)
 
@@ -12,6 +12,11 @@ annotation <- read.delim(annotation_file, stringsAsFactors = FALSE, check.names 
 autosomal_probes <- annotation$probeID[annotation$CpG_chrm %in% paste0("chr", 1:22)]
 mSet_autosomal <- mSet[featureNames(mSet) %in% autosomal_probes, ]
 beta_values <- getBeta(mSet_autosomal)
+
+saveRDS(
+  mSet_autosomal,
+  "data/GSE87571/mset_normalised_filtered_annotation_crossreactive_autosomal.rds"
+)
 
 dir.create("results/qc", recursive = TRUE, showWarnings = FALSE)
 

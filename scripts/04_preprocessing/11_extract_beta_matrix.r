@@ -4,8 +4,9 @@
 
 library (minfi)
 
-# Load the filtered MethylationSet object after detection, annotation, and cross-reactive probe filtering
-filtered_mset_file <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive.rds")
+# Load the filtered MethylationSet object after detection, annotation,
+# cross-reactive, and autosomal probe filtering.
+filtered_mset_file <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive_autosomal.rds")
 
 # Check that the loaded object is a MethylationSet and has the expected dimensions
 print(dim(filtered_mset_file))
