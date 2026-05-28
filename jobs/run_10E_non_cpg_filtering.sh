@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=post_filtering_exploration
+#SBATCH --job-name=non_cpg_filtering
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=04:00:00
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=64G
 
-# Slurm job for 10F_post_filtering_data_exploration.r
+# Slurm job for 10E_non_cpg_filtering.r
 
 set -euo pipefail
 
@@ -15,4 +15,4 @@ cd /data/home/bt25127/Msc_Dissertation
 mkdir -p logs
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/04_preprocessing/10F_post_filtering_data_exploration.r
+  Rscript scripts/04_preprocessing/10E_non_cpg_filtering.r

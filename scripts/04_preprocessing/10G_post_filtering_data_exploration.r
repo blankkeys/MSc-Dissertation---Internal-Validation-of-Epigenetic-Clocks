@@ -1,13 +1,13 @@
 # Post-filtering data exploration for GSE87571
-# This compares MDS plots before and after sex chromosome probe removal
+# This compares CpG-only MDS plots before and after autosomal filtering
 
 library(minfi)
 
-# Load the filtered object that still contains sex chromosome probes
-with_sex_chromosomes <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive.rds")
+# Load the CpG-filtered object that still contains sex chromosome probes
+with_sex_chromosomes <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive_cpg.rds")
 
-# Load the filtered object after sex chromosome probes have been removed
-without_sex_chromosomes <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive_autosomal.rds")
+# Load the CpG-filtered object after autosomal filtering
+without_sex_chromosomes <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive_cpg_autosomal.rds")
 
 # Extract beta values for plotting
 beta_with_sex_chromosomes <- getBeta(with_sex_chromosomes)

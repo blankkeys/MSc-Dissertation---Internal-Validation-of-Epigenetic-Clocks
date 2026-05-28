@@ -1,13 +1,13 @@
-# Autosomal CpG probe filtering for GSE87571
-# This keeps standard CpG probes annotated to chromosomes 1-22
+# Autosomal probe filtering for GSE87571
+# This removes CpG probes annotated outside chromosomes 1-22
 # The filtered object is saved for beta matrix extraction and modelling
 
 library(minfi)
 
-input_mset_file <- "data/GSE87571/mset_normalised_filtered_annotation_crossreactive.rds"
+input_mset_file <- "data/GSE87571/mset_normalised_filtered_annotation_crossreactive_cpg.rds"
 annotation_file <- "data/annotation/HM450.hg19.manifest.tsv.gz"
 
-output_mset_file <- "data/GSE87571/mset_normalised_filtered_annotation_crossreactive_autosomal.rds"
+output_mset_file <- "data/GSE87571/mset_normalised_filtered_annotation_crossreactive_cpg_autosomal.rds"
 summary_file <- "results/qc/autosomal_filtering_summary.csv"
 
 mSet <- readRDS(input_mset_file)
@@ -17,18 +17,15 @@ annotation <- read.delim(
   check.names = FALSE
 )
 
-# Keep standard CpG probes annotated to autosomes only
+# Match the annotation rows to the current methylation object
 probe_annotation <- annotation[
   match(featureNames(mSet), annotation$probeID),
 ]
 
+# Keep probes annotated to autosomes only
 is_autosomal <- probe_annotation$CpG_chrm %in% paste0("chr", 1:22)
-is_cpg_probe <- grepl("^cg", featureNames(mSet))
-
-autosomal_probes <- featureNames(mSet)[
-  is_autosomal & is_cpg_probe
-]
-mSet_autosomal <- mSet[featureNames(mSet) %in% autosomal_probes, ]
+is_autosomal[is.na(is_autosomal)] <- FALSE
+mSet_autosomal <- mSet[is_autosomal, ]
 
 saveRDS(mSet_autosomal, output_mset_file)
 
@@ -38,8 +35,6 @@ autosomal_summary <- data.frame(
   probes_before_filter = nrow(mSet),
   retained_autosomal_cpg_probes = nrow(mSet_autosomal),
   sex_chromosome_or_unmapped_probes_removed = sum(!is_autosomal),
-  autosomal_non_cpg_probes_removed = sum(is_autosomal & !is_cpg_probe),
-  total_removed_probes = nrow(mSet) - nrow(mSet_autosomal),
   non_cpg_probes_remaining = sum(!grepl("^cg", featureNames(mSet_autosomal))),
   annotation_source = annotation_file
 )

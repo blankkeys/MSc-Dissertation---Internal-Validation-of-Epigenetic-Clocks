@@ -4,8 +4,8 @@
 library(minfi)
 
 # Load the filtered MethylationSet object after detection, annotation,
-# cross-reactive, and autosomal CpG probe filtering.
-filtered_mset_file <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive_autosomal.rds")
+# cross-reactive, autosomal, and standard CpG probe filtering.
+filtered_mset_file <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive_cpg_autosomal.rds")
 
 # Check the dimensions of the final filtered object.
 print(dim(filtered_mset_file))
