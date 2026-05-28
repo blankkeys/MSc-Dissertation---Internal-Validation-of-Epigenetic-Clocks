@@ -18,9 +18,15 @@ annotation <- read.delim(
 )
 
 # Keep standard CpG probes annotated to autosomes only
-autosomal_probes <- annotation$probeID[
-  annotation$CpG_chrm %in% paste0("chr", 1:22) &
-    grepl("^cg", annotation$probeID)
+probe_annotation <- annotation[
+  match(featureNames(mSet), annotation$probeID),
+]
+
+is_autosomal <- probe_annotation$CpG_chrm %in% paste0("chr", 1:22)
+is_cpg_probe <- grepl("^cg", featureNames(mSet))
+
+autosomal_probes <- featureNames(mSet)[
+  is_autosomal & is_cpg_probe
 ]
 mSet_autosomal <- mSet[featureNames(mSet) %in% autosomal_probes, ]
 
@@ -31,9 +37,10 @@ dir.create("results/qc", recursive = TRUE, showWarnings = FALSE)
 autosomal_summary <- data.frame(
   probes_before_filter = nrow(mSet),
   retained_autosomal_cpg_probes = nrow(mSet_autosomal),
-  removed_probes = nrow(mSet) - nrow(mSet_autosomal),
+  sex_chromosome_or_unmapped_probes_removed = sum(!is_autosomal),
+  autosomal_non_cpg_probes_removed = sum(is_autosomal & !is_cpg_probe),
+  total_removed_probes = nrow(mSet) - nrow(mSet_autosomal),
   non_cpg_probes_remaining = sum(!grepl("^cg", featureNames(mSet_autosomal))),
-  filter_rule = "Keep probes on chr1-chr22 with probe IDs starting cg",
   annotation_source = annotation_file
 )
 
