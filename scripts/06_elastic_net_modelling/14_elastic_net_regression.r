@@ -18,9 +18,9 @@ y <- metadata$age
 # Train the elastic-net model.
 # cv.glmnet uses cross-validation to choose the lambda penalty value.
 elastic_net_model <- cv.glmnet(
-  x = x,
-  y = y,
-  alpha = 0.5, # hovarth clock used alpha 0.5
+  x = x, # CpG beta matrix
+  y = y, # age
+  alpha = 0.5, # Horvath clock used alpha 0.5, half lasso and half ridge
   family = "gaussian" # gaussian family for regression (age prediction)
 )
 

@@ -58,6 +58,12 @@ train_test_performance <- data.frame(
   training_samples = length(y_train),
   test_samples = length(y_test),
   input_cpgs = ncol(x),
+  #how many cpg selected by elastic net model
+  # coef(..)gets model coefficients at best lamda values chosen by cv
+  # s = .. menas use lamda value giving lowest cv error
+  # -1 mens remove first row (the intercept, not a cpg just the model baseline)
+  # !=0 checks which coe. are not zero
+  # sum counts how many TRUE values there are
   selected_cpgs = sum(coef(train_test_model, s = "lambda.min")[-1, ] != 0),
   mae = mean(abs(predicted_age - y_test)),
   median_absolute_error = median(abs(predicted_age - y_test)),

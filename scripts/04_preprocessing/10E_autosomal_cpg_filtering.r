@@ -1,6 +1,6 @@
-# Autosomal probe filtering for GSE87571
-# This removes probes annotated outside chromosomes 1-22.
-# The autosomal object is saved for beta matrix extraction and modelling.
+# Autosomal CpG probe filtering for GSE87571
+# This keeps standard CpG probes annotated to chromosomes 1-22
+# The filtered object is saved for beta matrix extraction and modelling
 
 library(minfi)
 
@@ -17,9 +17,10 @@ annotation <- read.delim(
   check.names = FALSE
 )
 
-# Keep probes annotated to autosomes only.
+# Keep standard CpG probes annotated to autosomes only
 autosomal_probes <- annotation$probeID[
-  annotation$CpG_chrm %in% paste0("chr", 1:22)
+  annotation$CpG_chrm %in% paste0("chr", 1:22) &
+    grepl("^cg", annotation$probeID)
 ]
 mSet_autosomal <- mSet[featureNames(mSet) %in% autosomal_probes, ]
 
@@ -28,9 +29,11 @@ saveRDS(mSet_autosomal, output_mset_file)
 dir.create("results/qc", recursive = TRUE, showWarnings = FALSE)
 
 autosomal_summary <- data.frame(
-  probes_before_autosomal_filter = nrow(mSet),
-  autosomal_probes = nrow(mSet_autosomal),
-  sex_chromosome_or_unmapped_probes = nrow(mSet) - nrow(mSet_autosomal),
+  probes_before_filter = nrow(mSet),
+  retained_autosomal_cpg_probes = nrow(mSet_autosomal),
+  removed_probes = nrow(mSet) - nrow(mSet_autosomal),
+  non_cpg_probes_remaining = sum(!grepl("^cg", featureNames(mSet_autosomal))),
+  filter_rule = "Keep probes on chr1-chr22 with probe IDs starting cg",
   annotation_source = annotation_file
 )
 

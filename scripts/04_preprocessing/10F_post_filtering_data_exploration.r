@@ -1,18 +1,21 @@
 # Post-filtering data exploration for GSE87571
-# This compares MDS plots before and after sex chromosome probe removal.
+# This compares MDS plots before and after sex chromosome probe removal
 
 library(minfi)
 
-
+# Load the filtered object that still contains sex chromosome probes
 with_sex_chromosomes <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive.rds")
+
+# Load the filtered object after sex chromosome probes have been removed
 without_sex_chromosomes <- readRDS("data/GSE87571/mset_normalised_filtered_annotation_crossreactive_autosomal.rds")
 
-
+# Extract beta values for plotting
 beta_with_sex_chromosomes <- getBeta(with_sex_chromosomes)
 beta_without_sex_chromosomes <- getBeta(without_sex_chromosomes)
 
 dir.create("results/qc", recursive = TRUE, showWarnings = FALSE)
 
+# Plot beta value density before sex chromosome probe removal
 pdf("results/qc/with_sex_chromosomes_density_plot.pdf")
 densityPlot(
   beta_with_sex_chromosomes,
@@ -21,6 +24,7 @@ densityPlot(
 )
 dev.off()
 
+# Plot MDS before sex chromosome probe removal
 pdf("results/qc/with_sex_chromosomes_mds_plot.pdf")
 mdsPlot(
   beta_with_sex_chromosomes,
@@ -30,6 +34,7 @@ mdsPlot(
 )
 dev.off()
 
+# Plot MDS after sex chromosome probe removal
 pdf("results/qc/without_sex_chromosomes_mds_plot.pdf")
 mdsPlot(
   beta_without_sex_chromosomes,
@@ -39,16 +44,23 @@ mdsPlot(
 )
 dev.off()
 
+# Load cleaned metadata for sex-coloured MDS plots
 metadata <- read.csv("data/GSE87571/modelling_metadata.csv")
+
+# Match sex labels to the beta matrix sample order
 sex_for_samples <- metadata$sex[match(colnames(beta_with_sex_chromosomes), metadata$sample_id)]
+
+# Keep samples with available sex metadata for grouped plots
 samples_with_sex <- !is.na(sex_for_samples)
 
+# Save the sex distribution used for grouped plots
 write.csv(
   as.data.frame(table(metadata$sex, useNA = "ifany")),
   "results/qc/sex_metadata_summary.csv",
   row.names = FALSE
 )
 
+# Plot MDS coloured by sex before sex chromosome probe removal
 pdf("results/qc/with_sex_chromosomes_mds_by_sex.pdf")
 mdsPlot(
   beta_with_sex_chromosomes[, samples_with_sex],
@@ -58,6 +70,7 @@ mdsPlot(
 )
 dev.off()
 
+# Plot MDS coloured by sex after sex chromosome probe removal
 pdf("results/qc/without_sex_chromosomes_mds_by_sex.pdf")
 mdsPlot(
   beta_without_sex_chromosomes[, samples_with_sex],
@@ -67,6 +80,7 @@ mdsPlot(
 )
 dev.off()
 
+# Save sample and probe counts for both plotted datasets
 data_exploration_summary <- data.frame(
   dataset = c("with_sex_chromosomes", "without_sex_chromosomes"),
   samples = c(
