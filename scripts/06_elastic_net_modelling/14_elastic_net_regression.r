@@ -17,6 +17,9 @@ y <- metadata$age
 
 # Train the elastic-net model.
 # cv.glmnet uses cross-validation to choose the lambda penalty value.
+# cv.glmnet fits the elastic model and chooses the best lamda by cv. elastic inlcudes
+# lasso penealtym so some CpG coefficients shrunk to 0, these CpGs ae not used
+# CpGs that are not 0 are selected
 elastic_net_model <- cv.glmnet(
   x = x, # CpG beta matrix
   y = y, # age
@@ -35,9 +38,10 @@ saveRDS(
 coefficients <- as.matrix(coef(elastic_net_model, s = "lambda.min"))
 coefficients <- data.frame(
   cpg = rownames(coefficients),
-  coefficient = as.numeric(coefficients[, 1])
+  coefficient = as.numeric(coefficients[, 1]) #take coef values from first column, turn into numeric values
 )
 
+# only rows wher coef is not 0
 coefficients <- coefficients[coefficients$coefficient != 0, ]
 
 write.csv(

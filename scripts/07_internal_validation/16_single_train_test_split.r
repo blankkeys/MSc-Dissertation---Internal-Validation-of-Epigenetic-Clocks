@@ -4,6 +4,8 @@
 library(glmnet)
 library(rsample)
 
+# make the randomness reproducible
+# (uses the same samples everytime)
 set.seed(123)
 
 beta_matrix <- readRDS("data/GSE87571/beta_matrix_age_model.rds")
@@ -43,16 +45,6 @@ predicted_age <- predict(
 # Convert predicted age to numeric vector for performance calculations
 predicted_age <- as.numeric(predicted_age)
 
-# Create a data frame with predictions and errors for the test set
-train_test_predictions <- data.frame(
-  sample_id = test_metadata$sample_id,
-  geo_accession = test_metadata$geo_accession,
-  age = y_test,
-  predicted_age = predicted_age,
-  age_error = predicted_age - y_test,
-  absolute_error = abs(predicted_age - y_test)
-)
-
 # Create a data frame summarising performance metrics for this single train-test split
 train_test_performance <- data.frame(
   training_samples = length(y_train),
@@ -60,7 +52,7 @@ train_test_performance <- data.frame(
   input_cpgs = ncol(x),
   #how many cpg selected by elastic net model
   # coef(..)gets model coefficients at best lamda values chosen by cv
-  # s = .. menas use lamda value giving lowest cv error
+  # lambda.min menas use lamda value giving lowest cv error
   # -1 mens remove first row (the intercept, not a cpg just the model baseline)
   # !=0 checks which coe. are not zero
   # sum counts how many TRUE values there are
@@ -74,25 +66,7 @@ train_test_performance <- data.frame(
 )
 
 write.csv(
-  train_test_predictions,
-  "results/internal_validation/single_train_test_split_predictions.csv",
-  row.names = FALSE
-)
-
-write.csv(
   train_test_performance,
   "results/internal_validation/single_train_test_split_summary.csv",
   row.names = FALSE
 )
-
-pdf("results/internal_validation/single_train_test_split_predicted_vs_actual_age.pdf")
-plot(
-  y_test,
-  predicted_age,
-  xlab = "Chronological age",
-  ylab = "Predicted age",
-  main = "Single train-test split validation",
-  pch = 16
-)
-abline(0, 1, col = "red")
-dev.off()

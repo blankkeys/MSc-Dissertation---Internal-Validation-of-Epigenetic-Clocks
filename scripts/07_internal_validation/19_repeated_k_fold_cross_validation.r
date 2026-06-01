@@ -12,7 +12,6 @@ x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 
 metadata_folds <- vfold_cv(metadata, v = 10, repeats = 5, strata = age)
 
-all_predictions <- data.frame()
 all_performance <- data.frame()
 
 for (i in seq_len(nrow(metadata_folds))) {
@@ -43,16 +42,6 @@ for (i in seq_len(nrow(metadata_folds))) {
 
   predicted_age <- as.numeric(predicted_age)
 
-  fold_predictions <- data.frame(
-    fold = metadata_folds$id[i], 
-    sample_id = test_metadata$sample_id,
-    geo_accession = test_metadata$geo_accession,
-    age = y_test,
-    predicted_age = predicted_age,
-    age_error = predicted_age - y_test,
-    absolute_error = abs(predicted_age - y_test)
-  )
-
   fold_performance <- data.frame(
     fold = metadata_folds$id[i],
     training_samples = length(y_train),
@@ -67,7 +56,6 @@ for (i in seq_len(nrow(metadata_folds))) {
     r_squared = cor(predicted_age, y_test)^2
   )
 
-  all_predictions <- rbind(all_predictions, fold_predictions)
   all_performance <- rbind(all_performance, fold_performance)
 }
 
@@ -89,12 +77,6 @@ repeated_k_fold_summary <- data.frame(
 )
 
 write.csv(
-  all_predictions,
-  "results/internal_validation/repeated_k_fold_predictions.csv",
-  row.names = FALSE
-)
-
-write.csv(
   all_performance,
   "results/internal_validation/repeated_k_fold_per_fold_summary.csv",
   row.names = FALSE
@@ -105,15 +87,3 @@ write.csv(
   "results/internal_validation/repeated_k_fold_summary.csv",
   row.names = FALSE
 )
-
-pdf("results/internal_validation/repeated_k_fold_predicted_vs_actual_age.pdf")
-plot(
-  all_predictions$age,
-  all_predictions$predicted_age,
-  xlab = "Chronological age",
-  ylab = "Predicted age",
-  main = "Repeated K-fold cross-validation",
-  pch = 16
-)
-abline(0, 1, col = "red")
-dev.off()

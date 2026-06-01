@@ -6,10 +6,13 @@
 # horvath has ~300 cpg after feature selection
 
 # check list
-# cross reactive
-# sex (maybe remove or make sex based clocks)
-# feature selection 
-# consider python
+# cross reactive -
+# sex (maybe remove or make sex based clocks) / removed, also removed non cpg probes
+# feature selection (eleastic net does this)
+
+# BOOTSTRAP 632 and 632 plus internal validation? 
+#
+
 
 library(glmnet)
 
@@ -21,24 +24,15 @@ elastic_net_model <- readRDS("results/modelling/elastic_net_final_model.rds")
 x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 y <- metadata$age
 
-# Predict age using the trained elastic-net model on the 
+# Predict age using the trained elastic-net model (from 14) on the 
 # training samples (apparent performance).
 predicted_age <- predict(
   elastic_net_model,
-  newx = x,
-  s = "lambda.min"
+  newx = x, 
+  s = "lambda.min" # use the penalty value with the lowest cv error
 )
 
 predicted_age <- as.numeric(predicted_age)
-
-apparent_predictions <- data.frame(
-  sample_id = metadata$sample_id,
-  geo_accession = metadata$geo_accession,
-  age = y,
-  predicted_age = predicted_age,
-  age_error = predicted_age - y,
-  absolute_error = abs(predicted_age - y)
-)
 
 apparent_performance <- data.frame(
   samples = length(y),
@@ -50,12 +44,6 @@ apparent_performance <- data.frame(
   mean_error = mean(predicted_age - y),
   correlation = cor(predicted_age, y),
   r_squared = cor(predicted_age, y)^2
-)
-
-write.csv(
-  apparent_predictions,
-  "results/internal_validation/apparent_performance_predictions.csv",
-  row.names = FALSE
 )
 
 write.csv(

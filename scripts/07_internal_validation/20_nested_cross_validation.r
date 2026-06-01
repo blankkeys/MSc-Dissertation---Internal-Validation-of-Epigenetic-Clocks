@@ -24,7 +24,6 @@ nested_folds <- nested_cv(
 # Values from 0 to 1 test ridge, elastic-net, and lasso models.
 alpha_grid <- c(0, 0.25, 0.5, 0.75, 1)
 
-all_predictions <- data.frame()
 outer_performance <- data.frame()
 inner_alpha_performance <- data.frame()
 
@@ -109,17 +108,6 @@ for (i in seq_len(nrow(nested_folds))) {
 
   predicted_age <- as.numeric(predicted_age)
 
-  fold_predictions <- data.frame(
-    fold = nested_folds$id[i],
-    sample_id = outer_test_metadata$sample_id,
-    geo_accession = outer_test_metadata$geo_accession,
-    age = y_outer_test,
-    predicted_age = predicted_age,
-    age_error = predicted_age - y_outer_test,
-    absolute_error = abs(predicted_age - y_outer_test),
-    selected_alpha = best_alpha
-  )
-
   fold_performance <- data.frame(
     fold = nested_folds$id[i],
     selected_alpha = best_alpha,
@@ -135,7 +123,6 @@ for (i in seq_len(nrow(nested_folds))) {
     r_squared = cor(predicted_age, y_outer_test)^2
   )
 
-  all_predictions <- rbind(all_predictions, fold_predictions)
   outer_performance <- rbind(outer_performance, fold_performance)
 }
 
@@ -157,12 +144,6 @@ nested_cv_summary <- data.frame(
 )
 
 write.csv(
-  all_predictions,
-  "results/internal_validation/nested_cross_validation_predictions.csv",
-  row.names = FALSE
-)
-
-write.csv(
   outer_performance,
   "results/internal_validation/nested_cross_validation_outer_fold_summary.csv",
   row.names = FALSE
@@ -179,15 +160,3 @@ write.csv(
   "results/internal_validation/nested_cross_validation_summary.csv",
   row.names = FALSE
 )
-
-pdf("results/internal_validation/nested_cross_validation_predicted_vs_actual_age.pdf")
-plot(
-  all_predictions$age,
-  all_predictions$predicted_age,
-  xlab = "Chronological age",
-  ylab = "Predicted age",
-  main = "Nested cross-validation",
-  pch = 16
-)
-abline(0, 1, col = "red")
-dev.off()
