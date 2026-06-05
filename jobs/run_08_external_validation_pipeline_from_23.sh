@@ -1,4 +1,4 @@
-#!/bin/bash
+ls #!/bin/bash
 
 # Run the GSE51032 external validation pipeline after download step 22
 # This uses sbatch --wait so each job starts after the previous job finishes
