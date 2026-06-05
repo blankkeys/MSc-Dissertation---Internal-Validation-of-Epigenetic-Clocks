@@ -16,7 +16,18 @@ if (length(missing_cpgs) > 0) {
 }
 
 # Match metadata samples to the external beta matrix
-external_metadata$sample_id <- external_metadata$Sample_Name
+external_metadata$basename_id <- basename(external_metadata$Basename)
+
+if (sum(external_metadata$Sample_Name %in% colnames(external_beta_matrix)) > 0) {
+  external_metadata$sample_id <- external_metadata$Sample_Name
+} else if (sum(external_metadata$basename_id %in% colnames(external_beta_matrix)) > 0) {
+  external_metadata$sample_id <- external_metadata$basename_id
+} else if (sum(external_metadata$geo_accession %in% colnames(external_beta_matrix)) > 0) {
+  external_metadata$sample_id <- external_metadata$geo_accession
+} else {
+  stop("Could not match GSE51032 metadata samples to beta matrix columns")
+}
+
 external_metadata <- external_metadata[
   external_metadata$sample_id %in% colnames(external_beta_matrix) &
     !is.na(external_metadata$age),
