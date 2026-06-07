@@ -93,7 +93,7 @@ matched_metadata <- merge(
 )
 
 # Check whether any metadata samples failed to match an IDAT file
-if (sum(is.na(matched_metadata$Basename)) > 0) {
+if (any(is.na(matched_metadata$Basename))) {
   stop("Some GSE51032 metadata samples did not match an IDAT file")
 }
 
@@ -105,6 +105,28 @@ cancer_free_metadata <- matched_metadata[
 if (nrow(cancer_free_metadata) == 0) {
   stop("No cancer-free GSE51032 samples were identified")
 }
+
+# Exclude samples with IDAT files that exist but cannot be read by minfi
+# GSM1235542 was tested separately and failed at IDAT import
+unreadable_sample <- "GSM1235542"
+
+import_excluded_samples <- cancer_free_metadata[
+  cancer_free_metadata$geo_accession == unreadable_sample,
+]
+
+import_excluded_samples$exclusion_reason <- "IDAT files present but unreadable by minfi"
+
+cancer_free_metadata <- cancer_free_metadata[
+  cancer_free_metadata$geo_accession != unreadable_sample,
+]
+
+dir.create("results/external_validation/qc", recursive = TRUE, showWarnings = FALSE)
+
+write.csv(
+  import_excluded_samples,
+  "results/external_validation/qc/gse51032_import_excluded_samples.csv",
+  row.names = FALSE
+)
 
 # Save the matched sample sheets for minfi import
 write.csv(
