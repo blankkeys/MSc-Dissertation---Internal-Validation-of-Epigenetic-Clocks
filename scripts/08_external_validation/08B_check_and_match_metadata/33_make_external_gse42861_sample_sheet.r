@@ -3,21 +3,22 @@
 # This script creates a sample sheet for external validation
 # by matching GEO series matrix metadata to IDAT files using the shared GSM accession
 
+# file locations
 series_matrix_file <- "data/GSE42861/GSE42861_series_matrix.txt.gz"
-idat_dir <- "data/GSE42861/GSE42861_RAW"
+idat_file <- "data/GSE42861/GSE42861_RAW"
 
 if (!file.exists(series_matrix_file)) {
   stop("The GSE42861 series matrix file was not found")
 }
 
-if (!dir.exists(idat_dir)) {
+if (!dir.exists(idat_file)) {
   stop("The GSE42861 IDAT directory was not found")
 }
 
-# Read the GEO series matrix metadata
+# read the GEO series matrix metadata
 series_lines <- readLines(gzfile(series_matrix_file))
 
-# Extract one sample metadata row from the series matrix
+# extract one sample metadata row from the series matrix
 extract_sample_row <- function(row) {
   if (is.na(row)) {
     stop("A required GSE42861 metadata row was not found")
@@ -35,6 +36,7 @@ extract_optional_sample_row <- function(row, sample_count) {
   extract_sample_row(row)
 }
 
+# extract sample IDs and metadata rows from the series matrix
 geo_accession <- extract_sample_row(series_lines[grepl("^!Sample_geo_accession\t", series_lines)][1])
 sample_title <- extract_sample_row(series_lines[grepl("^!Sample_title\t", series_lines)][1])
 source_name <- extract_sample_row(series_lines[grepl("^!Sample_source_name_ch1\t", series_lines)][1])
@@ -54,7 +56,7 @@ disease_status <- extract_optional_sample_row(
   length(geo_accession)
 )
 
-# Clean metadata values needed for external validation
+# clean metadata values needed for external validation
 gender <- tolower(trimws(gsub("gender:|sex:", "", gender, ignore.case = TRUE)))
 age <- as.numeric(trimws(gsub("age:", "", age, ignore.case = TRUE)))
 disease_status <- trimws(gsub("disease state:|diagnosis:|status:|phenotype:", "", disease_status, ignore.case = TRUE))
@@ -76,29 +78,29 @@ metadata$control_status <- ifelse(
   "case_or_other"
 )
 
-# List one IDAT file per sample
-# Stage 31 already checked that every green file has a matching red file
+# list one IDAT file per sample
+# Stage 32 already checked that every green file has a matching red file
 green_idat_files <- list.files(
-  idat_dir,
+  idat_file,
   pattern = "_Grn\\.idat\\.gz$",
   recursive = TRUE,
   full.names = TRUE
 )
 
-# Extract GSM IDs from IDAT filenames
+# extract GSM IDs from IDAT filenames
 idat_sample_ids <- sub("_.*$", "", basename(green_idat_files))
 
-# Create the Basename column needed by minfi
+# create the Basename column needed by minfi
 # Basename is the IDAT path without the red/green file ending
 idat_basenames <- gsub("_Grn\\.idat\\.gz$", "", green_idat_files)
 
-# Link GSM IDs to IDAT basenames
+# link GSM IDs to IDAT basenames
 idat_table <- data.frame(
   geo_accession = idat_sample_ids,
   Basename = idat_basenames
 )
 
-# Add the matching IDAT Basename to each metadata row
+# add the matching IDAT Basename to each metadata row
 matched_metadata <- merge(
   metadata,
   idat_table,
@@ -107,12 +109,12 @@ matched_metadata <- merge(
   sort = FALSE
 )
 
-# Check whether any metadata samples failed to match an IDAT file
+# check whether any metadata samples failed to match an IDAT file
 if (any(is.na(matched_metadata$Basename))) {
   stop("Some GSE42861 metadata samples did not match an IDAT file")
 }
 
-# Keep normal controls for the primary external validation cohort
+# keep normal controls for the primary external validation cohort
 control_metadata <- matched_metadata[
   matched_metadata$control_status == "normal_control" &
     !is.na(matched_metadata$age),
@@ -125,7 +127,7 @@ if (nrow(control_metadata) == 0) {
 dir.create("data/GSE42861", recursive = TRUE, showWarnings = FALSE)
 dir.create("results/external_validation/qc", recursive = TRUE, showWarnings = FALSE)
 
-# Save the matched sample sheets for minfi import
+# save the matched sample sheets for minfi import
 write.csv(
   matched_metadata,
   "data/GSE42861/gse42861_qc_ready_sample_sheet_all_samples.csv",
