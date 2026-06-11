@@ -44,6 +44,42 @@ mdsPlot(
 )
 dev.off()
 
+# Load cleaned metadata for sex-coloured MDS plots
+metadata <- read.csv("data/GSE42861/gse42861_qc_ready_sample_sheet_controls.csv")
+
+# Match sex labels to the beta matrix sample order
+sex_for_samples <- metadata$sex[match(colnames(beta_with_sex_chromosomes), metadata$Sample_Name)]
+
+# Keep samples with available sex metadata for grouped plots
+samples_with_sex <- !is.na(sex_for_samples)
+
+# Save the sex distribution used for grouped plots
+write.csv(
+  as.data.frame(table(metadata$sex, useNA = "ifany")),
+  "results/external_validation/qc/gse42861_sex_metadata_summary.csv",
+  row.names = FALSE
+)
+
+# Plot MDS coloured by sex before sex chromosome probe removal
+pdf("results/external_validation/qc/gse42861_with_sex_chromosomes_mds_by_sex.pdf")
+mdsPlot(
+  beta_with_sex_chromosomes[, samples_with_sex],
+  numPositions = 10000,
+  sampGroups = factor(sex_for_samples[samples_with_sex]),
+  main = "GSE42861 with sex chromosomes: MDS plot by sex"
+)
+dev.off()
+
+# Plot MDS coloured by sex after sex chromosome probe removal
+pdf("results/external_validation/qc/gse42861_without_sex_chromosomes_mds_by_sex.pdf")
+mdsPlot(
+  beta_without_sex_chromosomes[, samples_with_sex],
+  numPositions = 10000,
+  sampGroups = factor(sex_for_samples[samples_with_sex]),
+  main = "GSE42861 without sex chromosomes: MDS plot by sex"
+)
+dev.off()
+
 # Save sample and probe counts for both plotted datasets
 data_exploration_summary <- data.frame(
   dataset = c("with_sex_chromosomes", "without_sex_chromosomes"),

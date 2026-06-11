@@ -2,7 +2,7 @@
 
 library(minfi)
 
-# Load the raw RGChannelSet created by 26/34_import_external_gse42861_with_minfi.r
+# Load the raw RGChannelSet created by 34_import_external_gse42861_with_minfi.r
 rgSet <- readRDS("data/GSE42861/rgset_raw.rds")
 
 # Calculate detection p-values for each probe in each sample.
