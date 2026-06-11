@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run the GSE42861 external validation pipeline after download step 29
+# Run the GSE42861 external validation pipeline after download step 30
 # This uses sbatch --wait so each job starts after the previous job finishes
 
 set -euo pipefail
