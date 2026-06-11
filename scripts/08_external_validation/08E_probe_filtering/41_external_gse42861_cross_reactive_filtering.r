@@ -1,10 +1,10 @@
-# Cross-reactive probe filtering for GSE87571.
+# Cross-reactive probe filtering for GSE42861.
 # This uses the Zhou/InfiniumAnnotation HM450 manifest after detection p-value,
 # and SNP-based filtering have already been completed.
 
 library(minfi)
 
-mSet <- readRDS("data/GSE87571/mset_normalised_filtered_annotation.rds")
+mSet <- readRDS("data/GSE42861/mset_normalised_filtered_annotation.rds")
 
 annotation_file <- "data/annotation/HM450.hg19.manifest.tsv.gz"
 annotation <- read.delim(annotation_file, stringsAsFactors = FALSE, check.names = FALSE)
@@ -35,8 +35,10 @@ mSet_filtered <- mSet[keep, ]
 
 saveRDS(
   mSet_filtered,
-  "data/GSE87571/mset_normalised_filtered_annotation_crossreactive.rds"
+  "data/GSE42861/mset_normalised_filtered_annotation_crossreactive.rds"
 )
+
+dir.create("results/external_validation/qc", recursive = TRUE, showWarnings = FALSE)
 
 removed_probes <- data.frame(
   probe_id = featureNames(mSet)[!keep],
@@ -47,7 +49,7 @@ removed_probes <- data.frame(
 
 write.csv(
   removed_probes,
-  "results/qc/cross_reactive_removed_probes.csv",
+  "results/external_validation/qc/gse42861_cross_reactive_removed_probes.csv",
   row.names = FALSE
 )
 
@@ -61,7 +63,7 @@ cross_reactive_summary <- data.frame(
 
 write.csv(
   cross_reactive_summary,
-  "results/qc/cross_reactive_probe_filtering_summary.csv",
+  "results/external_validation/qc/gse42861_cross_reactive_probe_filtering_summary.csv",
   row.names = FALSE
 )
 
