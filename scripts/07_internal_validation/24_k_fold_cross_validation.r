@@ -21,6 +21,7 @@ metadata_folds <- vfold_cv(metadata, v = 10, strata = age)
 all_performance <- data.frame()
 all_residuals <- data.frame()
 
+# loop through each fold
 for (i in seq_len(nrow(metadata_folds))) {
   train_metadata <- analysis(metadata_folds$splits[[i]])
   test_metadata <- assessment(metadata_folds$splits[[i]])

@@ -18,6 +18,5 @@ sbatch --wait jobs/run_40_external_gse42861_annotation_based_filtering.sh
 sbatch --wait jobs/run_41_external_gse42861_cross_reactive_filtering.sh
 sbatch --wait jobs/run_42_external_gse42861_non_cpg_filtering.sh
 sbatch --wait jobs/run_43_external_gse42861_autosomal_filtering.sh
-sbatch --wait jobs/run_44_external_gse42861_post_filtering_data_exploration.sh
 sbatch --wait jobs/run_45_external_gse42861_extract_beta_matrix.sh
 sbatch --wait jobs/run_46_external_gse42861_validation.sh

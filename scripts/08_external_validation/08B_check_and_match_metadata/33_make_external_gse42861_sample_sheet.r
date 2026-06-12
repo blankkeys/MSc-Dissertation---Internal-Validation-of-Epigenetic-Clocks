@@ -7,6 +7,7 @@
 series_matrix_file <- "data/GSE42861/GSE42861_series_matrix.txt.gz"
 idat_file <- "data/GSE42861/GSE42861_RAW"
 
+# check files exist
 if (!file.exists(series_matrix_file)) {
   stop("The GSE42861 series matrix file was not found")
 }
@@ -16,6 +17,7 @@ if (!dir.exists(idat_file)) {
 }
 
 # read the GEO series matrix metadata
+# gzfile opnes compressed .gz file
 series_lines <- readLines(gzfile(series_matrix_file))
 
 # extract one sample metadata row from the series matrix
@@ -24,10 +26,14 @@ extract_sample_row <- function(row) {
     stop("A required GSE42861 metadata row was not found")
   }
 
+  # split the row by tabs
+  # -1 removes row label (e.g !sample_geo_accession)
   values <- strsplit(row, "\t")[[1]][-1]
+  # remove quotation marks and whitespace from each value
   gsub('"', "", values)
 }
 
+# ir row is missing, return N/A instead of stopping script
 extract_optional_sample_row <- function(row, sample_count) {
   if (is.na(row)) {
     return(rep(NA, sample_count))
@@ -37,12 +43,15 @@ extract_optional_sample_row <- function(row, sample_count) {
 }
 
 # extract sample IDs and metadata rows from the series matrix
+# extract sample titles
+# extract source names (tissue)
 geo_accession <- extract_sample_row(series_lines[grepl("^!Sample_geo_accession\t", series_lines)][1])
 sample_title <- extract_sample_row(series_lines[grepl("^!Sample_title\t", series_lines)][1])
 source_name <- extract_sample_row(series_lines[grepl("^!Sample_source_name_ch1\t", series_lines)][1])
 
 characteristic_rows <- series_lines[grepl("^!Sample_characteristics_ch1\t", series_lines)]
 
+# find and extract rows containing sex, age, disease status
 gender <- extract_optional_sample_row(
   characteristic_rows[grepl("gender:|sex:", characteristic_rows, ignore.case = TRUE)][1],
   length(geo_accession)
@@ -56,11 +65,12 @@ disease_status <- extract_optional_sample_row(
   length(geo_accession)
 )
 
-# clean metadata values needed for external validation
+# clean metadata values needed for external validation, by removing labels (e.g "gender:") and whitespace
 gender <- tolower(trimws(gsub("gender:|sex:", "", gender, ignore.case = TRUE)))
 age <- as.numeric(trimws(gsub("age:", "", age, ignore.case = TRUE)))
 disease_status <- trimws(gsub("disease state:|diagnosis:|status:|phenotype:", "", disease_status, ignore.case = TRUE))
 
+# create metadata table where each row is a sample
 metadata <- data.frame(
   geo_accession = geo_accession,
   Sample_Name = sample_title,

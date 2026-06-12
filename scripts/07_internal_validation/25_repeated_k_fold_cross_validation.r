@@ -2,7 +2,9 @@
 # This repeats K-fold cross-validation multiple times to get more robust performance estimates
 library(glmnet)
 library(rsample)
+
 dir.create("results/internal_validation", recursive = TRUE, showWarnings = FALSE)
+
 set.seed(123)
 
 beta_matrix <- readRDS("data/GSE87571/beta_matrix_age_model.rds")

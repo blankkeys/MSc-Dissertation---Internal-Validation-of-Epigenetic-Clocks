@@ -79,6 +79,7 @@ for (i in seq_len(nrow(metadata_splits))) {
   )
 
 # Append this split's performance to the overall performance data frame
+# rbind combines the rows of the new split performance with the existing all_performance data frame
   all_performance <- rbind(all_performance, split_performance)
   all_residuals <- rbind(all_residuals, split_residuals)
 }
