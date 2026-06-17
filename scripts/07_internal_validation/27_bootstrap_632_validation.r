@@ -111,11 +111,15 @@ for (i in seq_len(n_bootstrap)) {
   apparent_rmse <- sqrt(apparent_mse)
   oob_rmse <- sqrt(oob_mse)
 
+  apparent_mean_error <- mean(apparent_predicted_age - y_bootstrap)
+  oob_mean_error <- mean(oob_predicted_age - y_oob)
+
   # The .632 estimate combines apparent and out-of-bag error
   bootstrap_632_mae <- (0.368 * apparent_mae) + (0.632 * oob_mae)
   bootstrap_632_median_absolute_error <- (0.368 * apparent_median_absolute_error) +
     (0.632 * oob_median_absolute_error)
   bootstrap_632_rmse <- sqrt((0.368 * apparent_mse) + (0.632 * oob_mse))
+  bootstrap_632_mean_error <- (0.368 * apparent_mean_error) + (0.632 * oob_mean_error)
 
   # Summarise performance for this bootstrap resample
   split_performance <- data.frame(
@@ -134,8 +138,12 @@ for (i in seq_len(n_bootstrap)) {
     apparent_rmse = apparent_rmse,
     oob_rmse = oob_rmse,
     bootstrap_632_rmse = bootstrap_632_rmse,
-    oob_mean_error = mean(oob_predicted_age - y_oob),
+    apparent_mean_error = apparent_mean_error,
+    oob_mean_error = oob_mean_error,
+    bootstrap_632_mean_error = bootstrap_632_mean_error,
+    apparent_correlation = cor(apparent_predicted_age, y_bootstrap),
     oob_correlation = cor(oob_predicted_age, y_oob),
+    apparent_r_squared = cor(apparent_predicted_age, y_bootstrap)^2,
     oob_r_squared = cor(oob_predicted_age, y_oob)^2
   )
 
@@ -170,8 +178,12 @@ bootstrap_summary <- data.frame(
   mean_oob_rmse = mean(bootstrap_performance$oob_rmse),
   mean_bootstrap_632_rmse = mean(bootstrap_performance$bootstrap_632_rmse),
   sd_bootstrap_632_rmse = sd(bootstrap_performance$bootstrap_632_rmse),
+  mean_apparent_error = mean(bootstrap_performance$apparent_mean_error),
   mean_oob_error = mean(bootstrap_performance$oob_mean_error),
+  mean_bootstrap_632_error = mean(bootstrap_performance$bootstrap_632_mean_error),
+  mean_apparent_correlation = mean(bootstrap_performance$apparent_correlation),
   mean_oob_correlation = mean(bootstrap_performance$oob_correlation),
+  mean_apparent_r_squared = mean(bootstrap_performance$apparent_r_squared),
   mean_oob_r_squared = mean(bootstrap_performance$oob_r_squared)
 )
 

@@ -28,3 +28,4 @@ if (!file.exists("data/GSE42861/GSE42861_series_matrix.txt.gz")) {
 if (!dir.exists("data/GSE42861/GSE42861_RAW")) {
   untar("data/GSE42861/GSE42861_RAW.tar", exdir = "data/GSE42861/GSE42861_RAW") # exdir specifies the directory to extract the files to, in this case "GSE42861_RAW"
 }
+
