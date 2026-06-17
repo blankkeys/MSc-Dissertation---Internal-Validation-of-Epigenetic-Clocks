@@ -20,22 +20,37 @@ n_bootstrap <- 100
 n_samples <- nrow(x)
 
 bootstrap_performance <- data.frame()
+
 bootstrap_oob_residuals <- data.frame()
 
+# bootstrap training set and out of bag test set
+# out of bag is samples not used for training (on average 36.8% of samples)
 for (i in seq_len(n_bootstrap)) {
   # Sample individuals with replacement to create the bootstrap training set
+  # randomply samples sample numbers from the dataset
+  # with replacement means the same sample can be selected multiple times, 
+  # and some samples may not be selected at all
+  # eg , have 1,2,3,4,5,6,7,8,9,10
+  # bootstrap sample could be 2,5,5,7,1,3,2,8,9,4
+  # out of bag samples would be 6 and 10
   bootstrap_index <- sample(seq_len(n_samples), size = n_samples, replace = TRUE)
 
   # Samples not selected are the out-of-bag test set
   oob_index <- setdiff(seq_len(n_samples), unique(bootstrap_index))
 
+  # if no samples are left for out-of-bag testing, skip this iteration
   if (length(oob_index) == 0) {
     next
   }
 
+  # Create the bootstrap training methylation matrix for  bootstrap sample 
   x_bootstrap <- x[bootstrap_index, , drop = FALSE]
+  # Create the bootstrap training age vector for bootstrap sample 
+  # training age vector is the age of the samples in the bootstrap training set
   y_bootstrap <- y[bootstrap_index]
 
+  # Create the out-of-bag test methylation matrix for out-of-bag samples 
+  #and age vector for out-of-bag samples
   x_oob <- x[oob_index, , drop = FALSE]
   y_oob <- y[oob_index]
 
@@ -62,12 +77,12 @@ for (i in seq_len(n_bootstrap)) {
   )
 
   #calucalating bootsrap .632 estimates of performance
-
   apparent_predicted_age <- as.numeric(apparent_predicted_age)
   oob_predicted_age <- as.numeric(oob_predicted_age)
 
   oob_residuals <- data.frame(
     validation_method = "bootstrap_oob",
+    # paste0 is used to create a unique identifier for each bootstrap resample
     resample_id = paste0("bootstrap_", i),
     sample_id = metadata$sample_id[oob_index],
     geo_accession = metadata$geo_accession[oob_index],
@@ -77,15 +92,22 @@ for (i in seq_len(n_bootstrap)) {
     absolute_error = abs(oob_predicted_age - y_oob)
   )
 
+  # Calculate performance metrics for apparent and out-of-bag predictions
   apparent_mae <- mean(abs(apparent_predicted_age - y_bootstrap))
   oob_mae <- mean(abs(oob_predicted_age - y_oob))
 
+  # Median absolute error is less sensitive to outliers than mean absolute error, 
+  # so we calculate both
   apparent_median_absolute_error <- median(abs(apparent_predicted_age - y_bootstrap))
   oob_median_absolute_error <- median(abs(oob_predicted_age - y_oob))
 
+  # Mean squared error and root mean squared error are also calculated to provide a 
+  # more comprehensive assessment of model performance
   apparent_mse <- mean((apparent_predicted_age - y_bootstrap)^2)
   oob_mse <- mean((oob_predicted_age - y_oob)^2)
 
+  # Root mean squared error is on the same scale as the original age variable, 
+  # making it easier to interpret than mean squared error
   apparent_rmse <- sqrt(apparent_mse)
   oob_rmse <- sqrt(oob_mse)
 
@@ -95,6 +117,7 @@ for (i in seq_len(n_bootstrap)) {
     (0.632 * oob_median_absolute_error)
   bootstrap_632_rmse <- sqrt((0.368 * apparent_mse) + (0.632 * oob_mse))
 
+  # Summarise performance for this bootstrap resample
   split_performance <- data.frame(
     bootstrap = i,
     training_samples = length(bootstrap_index),
@@ -120,6 +143,7 @@ for (i in seq_len(n_bootstrap)) {
   bootstrap_oob_residuals <- rbind(bootstrap_oob_residuals, oob_residuals)
 }
 
+# Summarise bootstrap performance across all resamples
 bootstrap_summary <- data.frame(
   bootstrap_resamples = nrow(bootstrap_performance),
   input_cpgs = ncol(x),
