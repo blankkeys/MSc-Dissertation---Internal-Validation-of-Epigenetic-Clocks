@@ -20,6 +20,7 @@ metadata_folds <- vfold_cv(metadata, v = 10, strata = age)
 
 all_performance <- data.frame()
 all_residuals <- data.frame()
+all_selected_cpgs <- data.frame()
 
 # loop through each fold
 for (i in seq_len(nrow(metadata_folds))) {
@@ -40,6 +41,20 @@ for (i in seq_len(nrow(metadata_folds))) {
     alpha = 0.5,
     family = "gaussian"
   )
+
+  # Save the CpGs selected by this fold model
+  fold_selected_cpgs <- as.matrix(coef(k_fold_model, s = "lambda.min"))
+  fold_selected_cpgs <- data.frame(
+    validation_method = "k_fold_cross_validation",
+    resample_id = metadata_folds$id[i],
+    cpg = rownames(fold_selected_cpgs),
+    coefficient = as.numeric(fold_selected_cpgs[, 1])
+  )
+
+  fold_selected_cpgs <- fold_selected_cpgs[
+    fold_selected_cpgs$cpg != "(Intercept)" &
+      fold_selected_cpgs$coefficient != 0,
+  ]
 
   # Predict age in the held-out fold
   predicted_age <- predict(
@@ -77,6 +92,7 @@ for (i in seq_len(nrow(metadata_folds))) {
 
   all_performance <- rbind(all_performance, fold_performance)
   all_residuals <- rbind(all_residuals, fold_residuals)
+  all_selected_cpgs <- rbind(all_selected_cpgs, fold_selected_cpgs)
 }
 
 k_fold_summary <- data.frame(
@@ -105,6 +121,12 @@ write.csv(
 write.csv(
   all_residuals,
   "results/internal_validation/k_fold_residuals.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  all_selected_cpgs,
+  "results/internal_validation/k_fold_selected_cpgs.csv",
   row.names = FALSE
 )
 

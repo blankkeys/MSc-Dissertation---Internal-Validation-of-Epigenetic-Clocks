@@ -21,6 +21,7 @@ metadata_splits <- mc_cv(metadata, prop = 0.8, times = 10, strata = age)
 # data frame to store performance metrics for each split
 all_performance <- data.frame()
 all_residuals <- data.frame()
+all_selected_cpgs <- data.frame()
 
 #loop through each split
 for (i in seq_len(nrow(metadata_splits))) {
@@ -41,6 +42,20 @@ for (i in seq_len(nrow(metadata_splits))) {
     alpha = 0.5,
     family = "gaussian"
   )
+
+  # Save the CpGs selected by this split model
+  split_selected_cpgs <- as.matrix(coef(repeated_train_test_model, s = "lambda.min"))
+  split_selected_cpgs <- data.frame(
+    validation_method = "repeated_train_test_split",
+    resample_id = metadata_splits$id[i],
+    cpg = rownames(split_selected_cpgs),
+    coefficient = as.numeric(split_selected_cpgs[, 1])
+  )
+
+  split_selected_cpgs <- split_selected_cpgs[
+    split_selected_cpgs$cpg != "(Intercept)" &
+      split_selected_cpgs$coefficient != 0,
+  ]
 
   # Predict age in the held-out test samples
   predicted_age <- predict(
@@ -82,6 +97,7 @@ for (i in seq_len(nrow(metadata_splits))) {
 # rbind combines the rows of the new split performance with the existing all_performance data frame
   all_performance <- rbind(all_performance, split_performance)
   all_residuals <- rbind(all_residuals, split_residuals)
+  all_selected_cpgs <- rbind(all_selected_cpgs, split_selected_cpgs)
 }
 
 # Summarise performance across all splits
@@ -111,6 +127,12 @@ write.csv(
 write.csv(
   all_residuals,
   "results/internal_validation/repeated_train_test_split_residuals.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  all_selected_cpgs,
+  "results/internal_validation/repeated_train_test_split_selected_cpgs.csv",
   row.names = FALSE
 )
 

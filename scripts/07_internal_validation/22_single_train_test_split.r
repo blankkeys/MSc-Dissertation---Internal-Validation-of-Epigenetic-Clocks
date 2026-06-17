@@ -37,6 +37,19 @@ train_test_model <- cv.glmnet(
   family = "gaussian"
 )
 
+# Save the CpGs selected by the training model
+selected_cpgs <- as.matrix(coef(train_test_model, s = "lambda.min"))
+selected_cpgs <- data.frame(
+  validation_method = "single_train_test_split",
+  resample_id = "split_1",
+  cpg = rownames(selected_cpgs),
+  coefficient = as.numeric(selected_cpgs[, 1])
+)
+
+selected_cpgs <- selected_cpgs[
+  selected_cpgs$cpg != "(Intercept)" & selected_cpgs$coefficient != 0,
+]
+
 # Predict age in the held-out test samples
 predicted_age <- predict(
   train_test_model,
@@ -88,5 +101,11 @@ write.csv(
 write.csv(
   train_test_residuals,
   "results/internal_validation/single_train_test_split_residuals.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  selected_cpgs,
+  "results/internal_validation/single_train_test_split_selected_cpgs.csv",
   row.names = FALSE
 )

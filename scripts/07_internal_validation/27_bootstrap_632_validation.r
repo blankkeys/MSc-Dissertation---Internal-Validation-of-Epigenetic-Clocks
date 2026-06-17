@@ -22,6 +22,7 @@ n_samples <- nrow(x)
 bootstrap_performance <- data.frame()
 
 bootstrap_oob_residuals <- data.frame()
+bootstrap_selected_cpgs <- data.frame()
 
 # bootstrap training set and out of bag test set
 # out of bag is samples not used for training (on average 36.8% of samples)
@@ -61,6 +62,20 @@ for (i in seq_len(n_bootstrap)) {
     alpha = 0.5,
     family = "gaussian"
   )
+
+  # Save the CpGs selected by this bootstrap model
+  resample_selected_cpgs <- as.matrix(coef(bootstrap_model, s = "lambda.min"))
+  resample_selected_cpgs <- data.frame(
+    validation_method = "bootstrap",
+    resample_id = paste0("bootstrap_", i),
+    cpg = rownames(resample_selected_cpgs),
+    coefficient = as.numeric(resample_selected_cpgs[, 1])
+  )
+
+  resample_selected_cpgs <- resample_selected_cpgs[
+    resample_selected_cpgs$cpg != "(Intercept)" &
+      resample_selected_cpgs$coefficient != 0,
+  ]
 
   # Apparent predictions are made on the bootstrap training sample
   apparent_predicted_age <- predict(
@@ -149,6 +164,10 @@ for (i in seq_len(n_bootstrap)) {
 
   bootstrap_performance <- rbind(bootstrap_performance, split_performance)
   bootstrap_oob_residuals <- rbind(bootstrap_oob_residuals, oob_residuals)
+  bootstrap_selected_cpgs <- rbind(
+    bootstrap_selected_cpgs,
+    resample_selected_cpgs
+  )
 }
 
 # Summarise bootstrap performance across all resamples
@@ -196,6 +215,12 @@ write.csv(
 write.csv(
   bootstrap_oob_residuals,
   "results/internal_validation/bootstrap_oob_residuals.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  bootstrap_selected_cpgs,
+  "results/internal_validation/bootstrap_selected_cpgs.csv",
   row.names = FALSE
 )
 

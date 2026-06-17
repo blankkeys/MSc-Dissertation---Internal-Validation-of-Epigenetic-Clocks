@@ -59,6 +59,19 @@ apparent_performance <- data.frame(
   r_squared = cor(predicted_age, y)^2
 )
 
+# Save the selected CpGs from the final full-data model
+selected_cpgs <- as.matrix(coef(elastic_net_model, s = "lambda.min"))
+selected_cpgs <- data.frame(
+  validation_method = "apparent_performance",
+  resample_id = "apparent",
+  cpg = rownames(selected_cpgs),
+  coefficient = as.numeric(selected_cpgs[, 1])
+)
+
+selected_cpgs <- selected_cpgs[
+  selected_cpgs$cpg != "(Intercept)" & selected_cpgs$coefficient != 0,
+]
+
 write.csv(
   apparent_performance,
   "results/internal_validation/apparent_performance_summary.csv",
@@ -68,5 +81,11 @@ write.csv(
 write.csv(
   apparent_residuals,
   "results/internal_validation/apparent_performance_residuals.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  selected_cpgs,
+  "results/internal_validation/apparent_performance_selected_cpgs.csv",
   row.names = FALSE
 )

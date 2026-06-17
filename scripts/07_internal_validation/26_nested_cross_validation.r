@@ -29,6 +29,7 @@ alpha_grid <- c(0, 0.25, 0.5, 0.75, 1)
 outer_performance <- data.frame()
 inner_alpha_performance <- data.frame()
 outer_residuals <- data.frame()
+outer_selected_cpgs <- data.frame()
 
 for (i in seq_len(nrow(nested_folds))) {
   outer_train_metadata <- analysis(nested_folds$splits[[i]])
@@ -102,6 +103,21 @@ for (i in seq_len(nrow(nested_folds))) {
     family = "gaussian"
   )
 
+  # Save the CpGs selected by the outer fold model
+  fold_selected_cpgs <- as.matrix(coef(outer_model, s = "lambda.min"))
+  fold_selected_cpgs <- data.frame(
+    validation_method = "nested_cross_validation",
+    resample_id = nested_folds$id[i],
+    selected_alpha = best_alpha,
+    cpg = rownames(fold_selected_cpgs),
+    coefficient = as.numeric(fold_selected_cpgs[, 1])
+  )
+
+  fold_selected_cpgs <- fold_selected_cpgs[
+    fold_selected_cpgs$cpg != "(Intercept)" &
+      fold_selected_cpgs$coefficient != 0,
+  ]
+
   # Predict the outer held-out fold.
   predicted_age <- predict(
     outer_model,
@@ -139,6 +155,7 @@ for (i in seq_len(nrow(nested_folds))) {
 
   outer_performance <- rbind(outer_performance, fold_performance)
   outer_residuals <- rbind(outer_residuals, fold_residuals)
+  outer_selected_cpgs <- rbind(outer_selected_cpgs, fold_selected_cpgs)
 }
 
 nested_cv_summary <- data.frame(
@@ -173,6 +190,12 @@ write.csv(
 write.csv(
   inner_alpha_performance,
   "results/internal_validation/nested_cross_validation_inner_alpha_summary.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  outer_selected_cpgs,
+  "results/internal_validation/nested_cross_validation_selected_cpgs.csv",
   row.names = FALSE
 )
 
