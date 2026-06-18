@@ -23,8 +23,8 @@ nested_folds <- nested_cv(
 )
 
 # Alpha controls the ridge/lasso mixture in glmnet.
-# Values from 0 to 1 test ridge, elastic-net, and lasso models.
-alpha_grid <- c(0, 0.25, 0.5, 0.75, 1)
+# Values from 0.05 to 1.00 test elastic-net mixtures from ridge-like to lasso.
+alpha_grid <- seq(0.05, 1, by = 0.05)
 
 outer_performance <- data.frame()
 inner_alpha_performance <- data.frame()
@@ -69,6 +69,8 @@ for (i in seq_len(nrow(nested_folds))) {
         outer_fold = nested_folds$id[i],
         inner_fold = inner_folds$id[j],
         alpha = alpha_value,
+        lambda_min = inner_model$lambda.min,
+        lambda_1se = inner_model$lambda.1se,
         mae = mean(abs(inner_predicted_age - y_inner_test))
       )
 
@@ -109,6 +111,8 @@ for (i in seq_len(nrow(nested_folds))) {
     validation_method = "nested_cross_validation",
     resample_id = nested_folds$id[i],
     selected_alpha = best_alpha,
+    lambda_min = outer_model$lambda.min,
+    lambda_1se = outer_model$lambda.1se,
     cpg = rownames(fold_selected_cpgs),
     coefficient = as.numeric(fold_selected_cpgs[, 1])
   )
@@ -144,6 +148,8 @@ for (i in seq_len(nrow(nested_folds))) {
     training_samples = length(y_outer_train),
     test_samples = length(y_outer_test),
     input_cpgs = ncol(x),
+    lambda_min = outer_model$lambda.min,
+    lambda_1se = outer_model$lambda.1se,
     selected_cpgs = sum(coef(outer_model, s = "lambda.min")[-1, ] != 0),
     mae = mean(abs(predicted_age - y_outer_test)),
     median_absolute_error = median(abs(predicted_age - y_outer_test)),

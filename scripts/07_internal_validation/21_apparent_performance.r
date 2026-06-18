@@ -1,19 +1,6 @@
 # Apparent performance for the elastic-net age prediction model
 # This evaluates the model on the same samples used to train it.
 
-# need to do feature selection, need to select the best ones, 
-# need to do the same for the repeated k-fold cross-validation, need to do the same for the single train-test split validation, need to do the same for the leave-one-out cross-validation, need to do the same for the bootstrap validation, need to do the same for the nested cross-validation, need to do the same for the external validation, need to do the same for the independent validation, need to do the same for the prospective validation, need to do the same for the retrospective validation, need to do the same for the real-world validation, need to do the same for the clinical validation, need to do the same for the translational validation, need to do the same for the implementation validation, need to do the same for the impact validation, need to do the same for the cost-effectiveness validation, need to do the same for the ethical validation, need to do the same for the social validation, need to do the same for the regulatory validation, need to do the same for the policy validation, need to do the same for the public health validation.
-# horvath has ~300 cpg after feature selection
-
-# check list
-# cross reactive -
-# sex (maybe remove or make sex based clocks) / removed, also removed non cpg probes
-# feature selection (eleastic net does this)
-
-# BOOTSTRAP 632 and 632 plus internal validation? 
-#
-
-
 library(glmnet)
 
 dir.create("results/internal_validation", recursive = TRUE, showWarnings = FALSE)
@@ -71,6 +58,13 @@ selected_cpgs <- data.frame(
 selected_cpgs <- selected_cpgs[
   selected_cpgs$cpg != "(Intercept)" & selected_cpgs$coefficient != 0,
 ]
+
+model_hyperparameters <- read.csv(
+  "results/modelling/elastic_net_final_model_hyperparameters.csv"
+)
+selected_cpgs$selected_alpha <- model_hyperparameters$selected_alpha
+selected_cpgs$lambda_min <- model_hyperparameters$lambda_min
+selected_cpgs$lambda_1se <- model_hyperparameters$lambda_1se
 
 write.csv(
   apparent_performance,

@@ -3,6 +3,7 @@
 
 library(glmnet)
 library(rsample)
+source("scripts/common/elastic_net_alpha_tuning.r")
 
 dir.create("results/internal_validation", recursive = TRUE, showWarnings = FALSE)
 
@@ -18,10 +19,13 @@ x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 # Stratify by age so training and test sets have similar age distributions
 metadata_splits <- mc_cv(metadata, prop = 0.8, times = 10, strata = age)
 
+alpha_grid <- seq(0.05, 1, by = 0.05)
+
 # data frame to store performance metrics for each split
 all_performance <- data.frame()
 all_residuals <- data.frame()
 all_selected_cpgs <- data.frame()
+all_alpha_tuning <- data.frame()
 
 #loop through each split
 for (i in seq_len(nrow(metadata_splits))) {
@@ -35,27 +39,23 @@ for (i in seq_len(nrow(metadata_splits))) {
   x_test <- x[test_metadata$sample_id, ]
   y_test <- test_metadata$age
 
-  # Train the elastic-net model using the training samples only
-  repeated_train_test_model <- cv.glmnet(
-    x = x_train,
-    y = y_train,
-    alpha = 0.5,
-    family = "gaussian"
-  )
+  # Tune alpha and lambda using the training samples only
+  alpha_tuned_model <- tune_alpha_model(x_train, y_train, alpha_grid)
+  repeated_train_test_model <- alpha_tuned_model$model
 
   # Save the CpGs selected by this split model
-  split_selected_cpgs <- as.matrix(coef(repeated_train_test_model, s = "lambda.min"))
-  split_selected_cpgs <- data.frame(
-    validation_method = "repeated_train_test_split",
-    resample_id = metadata_splits$id[i],
-    cpg = rownames(split_selected_cpgs),
-    coefficient = as.numeric(split_selected_cpgs[, 1])
+  split_selected_cpgs <- get_selected_cpgs(
+    repeated_train_test_model,
+    "repeated_train_test_split",
+    metadata_splits$id[i]
   )
+  split_selected_cpgs$selected_alpha <- alpha_tuned_model$selected_alpha
+  split_selected_cpgs$lambda_min <- repeated_train_test_model$lambda.min
+  split_selected_cpgs$lambda_1se <- repeated_train_test_model$lambda.1se
 
-  split_selected_cpgs <- split_selected_cpgs[
-    split_selected_cpgs$cpg != "(Intercept)" &
-      split_selected_cpgs$coefficient != 0,
-  ]
+  split_alpha_tuning <- alpha_tuned_model$alpha_performance
+  split_alpha_tuning$validation_method <- "repeated_train_test_split"
+  split_alpha_tuning$resample_id <- metadata_splits$id[i]
 
   # Predict age in the held-out test samples
   predicted_age <- predict(
@@ -84,6 +84,9 @@ for (i in seq_len(nrow(metadata_splits))) {
     training_samples = length(y_train),
     test_samples = length(y_test),
     input_cpgs = ncol(x),
+    selected_alpha = alpha_tuned_model$selected_alpha,
+    lambda_min = repeated_train_test_model$lambda.min,
+    lambda_1se = repeated_train_test_model$lambda.1se,
     selected_cpgs = sum(coef(repeated_train_test_model, s = "lambda.min")[-1, ] != 0),
     mae = mean(abs(predicted_age - y_test)),
     median_absolute_error = median(abs(predicted_age - y_test)),
@@ -98,6 +101,7 @@ for (i in seq_len(nrow(metadata_splits))) {
   all_performance <- rbind(all_performance, split_performance)
   all_residuals <- rbind(all_residuals, split_residuals)
   all_selected_cpgs <- rbind(all_selected_cpgs, split_selected_cpgs)
+  all_alpha_tuning <- rbind(all_alpha_tuning, split_alpha_tuning)
 }
 
 # Summarise performance across all splits
@@ -133,6 +137,12 @@ write.csv(
 write.csv(
   all_selected_cpgs,
   "results/internal_validation/repeated_train_test_split_selected_cpgs.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  all_alpha_tuning,
+  "results/internal_validation/repeated_train_test_split_alpha_tuning.csv",
   row.names = FALSE
 )
 

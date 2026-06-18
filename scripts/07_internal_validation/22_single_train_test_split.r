@@ -3,6 +3,7 @@
 
 library(glmnet)
 library(rsample)
+source("scripts/common/elastic_net_alpha_tuning.r")
 
 dir.create("results/internal_validation", recursive = TRUE, showWarnings = FALSE)
 
@@ -29,26 +30,23 @@ y_train <- train_metadata$age # y_train is the vector of ages corresponding to t
 x_test <- x[test_metadata$sample_id, ] # x_test is the test data matrix with samples as rows and CpG sites as columns
 y_test <- test_metadata$age # y_test is the vector of ages corresponding to the test samples
 
-# Train the elastic-net model using the training samples only.
-train_test_model <- cv.glmnet(
-  x = x_train,
-  y = y_train,
-  alpha = 0.5,
-  family = "gaussian"
-)
+# Tune alpha and lambda using the training samples only
+alpha_grid <- seq(0.05, 1, by = 0.05)
+alpha_tuned_model <- tune_alpha_model(x_train, y_train, alpha_grid)
+train_test_model <- alpha_tuned_model$model
+alpha_tuning <- alpha_tuned_model$alpha_performance
+alpha_tuning$validation_method <- "single_train_test_split"
+alpha_tuning$resample_id <- "split_1"
 
 # Save the CpGs selected by the training model
-selected_cpgs <- as.matrix(coef(train_test_model, s = "lambda.min"))
-selected_cpgs <- data.frame(
-  validation_method = "single_train_test_split",
-  resample_id = "split_1",
-  cpg = rownames(selected_cpgs),
-  coefficient = as.numeric(selected_cpgs[, 1])
+selected_cpgs <- get_selected_cpgs(
+  train_test_model,
+  "single_train_test_split",
+  "split_1"
 )
-
-selected_cpgs <- selected_cpgs[
-  selected_cpgs$cpg != "(Intercept)" & selected_cpgs$coefficient != 0,
-]
+selected_cpgs$selected_alpha <- alpha_tuned_model$selected_alpha
+selected_cpgs$lambda_min <- train_test_model$lambda.min
+selected_cpgs$lambda_1se <- train_test_model$lambda.1se
 
 # Predict age in the held-out test samples
 predicted_age <- predict(
@@ -77,6 +75,9 @@ train_test_performance <- data.frame(
   training_samples = length(y_train),
   test_samples = length(y_test),
   input_cpgs = ncol(x),
+  selected_alpha = alpha_tuned_model$selected_alpha,
+  lambda_min = train_test_model$lambda.min,
+  lambda_1se = train_test_model$lambda.1se,
   #how many cpg selected by elastic net model
   # coef(..)gets model coefficients at best lamda values chosen by cv
   # lambda.min menas use lamda value giving lowest cv error
@@ -107,5 +108,11 @@ write.csv(
 write.csv(
   selected_cpgs,
   "results/internal_validation/single_train_test_split_selected_cpgs.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  alpha_tuning,
+  "results/internal_validation/single_train_test_split_alpha_tuning.csv",
   row.names = FALSE
 )

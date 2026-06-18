@@ -2,6 +2,7 @@
 # This trains the model on bootstrap samples and tests it on out-of-bag samples
 
 library(glmnet)
+source("scripts/common/elastic_net_alpha_tuning.r")
 
 dir.create("results/internal_validation", recursive = TRUE, showWarnings = FALSE)
 
@@ -18,11 +19,13 @@ y <- metadata$age
 # Efron and Tibshirani recommend 50 to 200 bootstrap samples for this approach
 n_bootstrap <- 100
 n_samples <- nrow(x)
+alpha_grid <- seq(0.05, 1, by = 0.05)
 
 bootstrap_performance <- data.frame()
 
 bootstrap_oob_residuals <- data.frame()
 bootstrap_selected_cpgs <- data.frame()
+bootstrap_alpha_tuning <- data.frame()
 
 # bootstrap training set and out of bag test set
 # out of bag is samples not used for training (on average 36.8% of samples)
@@ -55,27 +58,23 @@ for (i in seq_len(n_bootstrap)) {
   x_oob <- x[oob_index, , drop = FALSE]
   y_oob <- y[oob_index]
 
-  # Train the elastic-net model on the bootstrap sample
-  bootstrap_model <- cv.glmnet(
-    x = x_bootstrap,
-    y = y_bootstrap,
-    alpha = 0.5,
-    family = "gaussian"
-  )
+  # Tune alpha and lambda using the bootstrap training sample
+  alpha_tuned_model <- tune_alpha_model(x_bootstrap, y_bootstrap, alpha_grid)
+  bootstrap_model <- alpha_tuned_model$model
 
   # Save the CpGs selected by this bootstrap model
-  resample_selected_cpgs <- as.matrix(coef(bootstrap_model, s = "lambda.min"))
-  resample_selected_cpgs <- data.frame(
-    validation_method = "bootstrap",
-    resample_id = paste0("bootstrap_", i),
-    cpg = rownames(resample_selected_cpgs),
-    coefficient = as.numeric(resample_selected_cpgs[, 1])
+  resample_selected_cpgs <- get_selected_cpgs(
+    bootstrap_model,
+    "bootstrap",
+    paste0("bootstrap_", i)
   )
+  resample_selected_cpgs$selected_alpha <- alpha_tuned_model$selected_alpha
+  resample_selected_cpgs$lambda_min <- bootstrap_model$lambda.min
+  resample_selected_cpgs$lambda_1se <- bootstrap_model$lambda.1se
 
-  resample_selected_cpgs <- resample_selected_cpgs[
-    resample_selected_cpgs$cpg != "(Intercept)" &
-      resample_selected_cpgs$coefficient != 0,
-  ]
+  resample_alpha_tuning <- alpha_tuned_model$alpha_performance
+  resample_alpha_tuning$validation_method <- "bootstrap"
+  resample_alpha_tuning$resample_id <- paste0("bootstrap_", i)
 
   # Apparent predictions are made on the bootstrap training sample
   apparent_predicted_age <- predict(
@@ -143,6 +142,9 @@ for (i in seq_len(n_bootstrap)) {
     unique_training_samples = length(unique(bootstrap_index)),
     out_of_bag_samples = length(oob_index),
     input_cpgs = ncol(x),
+    selected_alpha = alpha_tuned_model$selected_alpha,
+    lambda_min = bootstrap_model$lambda.min,
+    lambda_1se = bootstrap_model$lambda.1se,
     selected_cpgs = sum(coef(bootstrap_model, s = "lambda.min")[-1, ] != 0),
     apparent_mae = apparent_mae,
     oob_mae = oob_mae,
@@ -167,6 +169,10 @@ for (i in seq_len(n_bootstrap)) {
   bootstrap_selected_cpgs <- rbind(
     bootstrap_selected_cpgs,
     resample_selected_cpgs
+  )
+  bootstrap_alpha_tuning <- rbind(
+    bootstrap_alpha_tuning,
+    resample_alpha_tuning
   )
 }
 
@@ -221,6 +227,12 @@ write.csv(
 write.csv(
   bootstrap_selected_cpgs,
   "results/internal_validation/bootstrap_selected_cpgs.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  bootstrap_alpha_tuning,
+  "results/internal_validation/bootstrap_alpha_tuning.csv",
   row.names = FALSE
 )
 

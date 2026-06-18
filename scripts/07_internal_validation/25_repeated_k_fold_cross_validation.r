@@ -2,6 +2,7 @@
 # This repeats K-fold cross-validation multiple times to get more robust performance estimates
 library(glmnet)
 library(rsample)
+source("scripts/common/elastic_net_alpha_tuning.r")
 
 dir.create("results/internal_validation", recursive = TRUE, showWarnings = FALSE)
 
@@ -15,9 +16,12 @@ x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 
 metadata_folds <- vfold_cv(metadata, v = 10, repeats = 5, strata = age)
 
+alpha_grid <- seq(0.05, 1, by = 0.05)
+
 all_performance <- data.frame()
 all_residuals <- data.frame()
 all_selected_cpgs <- data.frame()
+all_alpha_tuning <- data.frame()
 
 for (i in seq_len(nrow(metadata_folds))) {
   train_metadata <- analysis(metadata_folds$splits[[i]])
@@ -30,27 +34,23 @@ for (i in seq_len(nrow(metadata_folds))) {
   x_test <- x[test_metadata$sample_id, ]
   y_test <- test_metadata$age 
 
-  # Train the elastic-net model using the training folds only
-  k_fold_model <- cv.glmnet(
-    x = x_train,
-    y = y_train,
-    alpha = 0.5,
-    family = "gaussian"
-  )
+  # Tune alpha and lambda using the training folds only
+  alpha_tuned_model <- tune_alpha_model(x_train, y_train, alpha_grid)
+  k_fold_model <- alpha_tuned_model$model
 
   # Save the CpGs selected by this fold model
-  fold_selected_cpgs <- as.matrix(coef(k_fold_model, s = "lambda.min"))
-  fold_selected_cpgs <- data.frame(
-    validation_method = "repeated_k_fold_cross_validation",
-    resample_id = metadata_folds$id[i],
-    cpg = rownames(fold_selected_cpgs),
-    coefficient = as.numeric(fold_selected_cpgs[, 1])
+  fold_selected_cpgs <- get_selected_cpgs(
+    k_fold_model,
+    "repeated_k_fold_cross_validation",
+    metadata_folds$id[i]
   )
+  fold_selected_cpgs$selected_alpha <- alpha_tuned_model$selected_alpha
+  fold_selected_cpgs$lambda_min <- k_fold_model$lambda.min
+  fold_selected_cpgs$lambda_1se <- k_fold_model$lambda.1se
 
-  fold_selected_cpgs <- fold_selected_cpgs[
-    fold_selected_cpgs$cpg != "(Intercept)" &
-      fold_selected_cpgs$coefficient != 0,
-  ]
+  fold_alpha_tuning <- alpha_tuned_model$alpha_performance
+  fold_alpha_tuning$validation_method <- "repeated_k_fold_cross_validation"
+  fold_alpha_tuning$resample_id <- metadata_folds$id[i]
 
   # Predict age in the held-out fold
   predicted_age <- predict(
@@ -77,6 +77,9 @@ for (i in seq_len(nrow(metadata_folds))) {
     training_samples = length(y_train),
     test_samples = length(y_test),
     input_cpgs = ncol(x),
+    selected_alpha = alpha_tuned_model$selected_alpha,
+    lambda_min = k_fold_model$lambda.min,
+    lambda_1se = k_fold_model$lambda.1se,
     selected_cpgs = sum(coef(k_fold_model, s = "lambda.min")[-1, ] != 0),
     mae = mean(abs(predicted_age - y_test)),
     median_absolute_error = median(abs(predicted_age - y_test)),
@@ -89,6 +92,7 @@ for (i in seq_len(nrow(metadata_folds))) {
   all_performance <- rbind(all_performance, fold_performance)
   all_residuals <- rbind(all_residuals, fold_residuals)
   all_selected_cpgs <- rbind(all_selected_cpgs, fold_selected_cpgs)
+  all_alpha_tuning <- rbind(all_alpha_tuning, fold_alpha_tuning)
 }
 
 repeated_k_fold_summary <- data.frame(
@@ -123,6 +127,12 @@ write.csv(
 write.csv(
   all_selected_cpgs,
   "results/internal_validation/repeated_k_fold_selected_cpgs.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  all_alpha_tuning,
+  "results/internal_validation/repeated_k_fold_alpha_tuning.csv",
   row.names = FALSE
 )
 

@@ -2,6 +2,7 @@
 # Train an epigenetic clock using age-available samples.
 
 library(glmnet)
+source("scripts/common/elastic_net_alpha_tuning.r")
 
 # set seed makes the random processes in glmnet reproducible,
 # so we get the same model each time we run this script
@@ -15,23 +16,33 @@ metadata <- read.csv("data/GSE87571/modelling_metadata_age_model.csv")
 x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 y <- metadata$age
 
-# Train the elastic-net model.
-# cv.glmnet uses cross-validation to choose the lambda penalty value.
-# cv.glmnet fits the elastic model and chooses the best lamda by cv. elastic inlcudes
-# lasso penealtym so some CpG coefficients shrunk to 0, these CpGs ae not used
-# CpGs that are not 0 are selected
-elastic_net_model <- cv.glmnet(
-  x = x, # CpG beta matrix
-  y = y, # age
-  alpha = 0.5, # Horvath clock used alpha 0.5, half lasso and half ridge
-  family = "gaussian" # gaussian family for regression (age prediction)
-)
+# Test alpha values from 0.05 to 1.00 and keep the alpha with the lowest CV error.
+# Lambda is selected by cv.glmnet within each alpha value.
+alpha_grid <- seq(0.05, 1, by = 0.05)
+alpha_tuned_model <- tune_alpha_model(x, y, alpha_grid)
+elastic_net_model <- alpha_tuned_model$model
 
 dir.create("results/modelling", recursive = TRUE, showWarnings = FALSE)
 
 saveRDS(
   elastic_net_model,
   "results/modelling/elastic_net_final_model.rds"
+)
+
+write.csv(
+  alpha_tuned_model$alpha_performance,
+  "results/modelling/elastic_net_alpha_tuning_summary.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  data.frame(
+    selected_alpha = alpha_tuned_model$selected_alpha,
+    lambda_min = elastic_net_model$lambda.min,
+    lambda_1se = elastic_net_model$lambda.1se
+  ),
+  "results/modelling/elastic_net_final_model_hyperparameters.csv",
+  row.names = FALSE
 )
 
 # tells me which CpG sites were selected by the model and their coefficients
