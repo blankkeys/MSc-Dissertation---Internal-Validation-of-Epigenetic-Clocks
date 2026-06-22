@@ -3,6 +3,10 @@
 dir.create("results/descriptive_plots", recursive = TRUE, showWarnings = FALSE)
 
 plot_predicted_vs_age <- function(predictions, output_file, plot_title) {
+  predictions <- na.omit(predictions[c("age", "predicted_age")])
+  error <- predictions$predicted_age - predictions$age
+  calibration <- lm(predicted_age ~ age, data = predictions)
+
   plot_range <- range(
     c(predictions$age, predictions$predicted_age),
     na.rm = TRUE
@@ -21,6 +25,32 @@ plot_predicted_vs_age <- function(predictions, output_file, plot_title) {
     col = rgb(31, 94, 150, 120, maxColorValue = 255)
   )
   abline(0, 1, col = "red", lwd = 2)
+  abline(calibration, col = "black", lwd = 2, lty = 2)
+
+  legend(
+    "topleft",
+    legend = c(
+      sprintf("MAE = %.2f years", mean(abs(error))),
+      sprintf("RMSE = %.2f years", sqrt(mean(error^2))),
+      sprintf("Pearson r = %.3f", cor(predictions$age, predictions$predicted_age)),
+      sprintf("Calibration slope = %.3f", coef(calibration)[2]),
+      sprintf("Calibration intercept = %.2f", coef(calibration)[1]),
+      paste0("n = ", nrow(predictions))
+    ),
+    bty = "o",
+    bg = "white",
+    cex = 0.75
+  )
+
+  legend(
+    "bottomright",
+    legend = c("Perfect agreement", "Fitted calibration"),
+    col = c("red", "black"),
+    lty = c(1, 2),
+    lwd = 2,
+    bty = "n",
+    cex = 0.75
+  )
   dev.off()
 }
 
