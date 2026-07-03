@@ -1,18 +1,19 @@
 #!/bin/bash
-#SBATCH --job-name=calibration_bias
+#SBATCH --job-name=combine_nested_validation
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=01:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
 
-# Slurm job for 29_internal_validation_calibration_and_bias.r
+# Slurm job for 26_combine_nested_cross_validation.r
 
 set -euo pipefail
 
 cd /data/home/bt25127/Msc_Dissertation
 
 mkdir -p logs
+mkdir -p results/internal_validation
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/07_internal_validation/29_internal_validation_calibration_and_bias.r
+  Rscript scripts/07_internal_validation/26_combine_nested_cross_validation.r

@@ -1,19 +1,19 @@
 #!/bin/bash
-#SBATCH --job-name=external_thresholds
+#SBATCH --job-name=combine_repeated_k_fold
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=01:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
 
-# Slurm job for 47_external_threshold_evaluation.r
+# Slurm job for 25_combine_repeated_k_fold_cross_validation.r
 
 set -euo pipefail
 
 cd /data/home/bt25127/Msc_Dissertation
 
 mkdir -p logs
-mkdir -p results/external_validation
+mkdir -p results/internal_validation
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/08_external_validation/08G_external_validation/47_external_threshold_evaluation.r
+  Rscript scripts/07_internal_validation/25_combine_repeated_k_fold_cross_validation.r

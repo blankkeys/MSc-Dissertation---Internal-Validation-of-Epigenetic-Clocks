@@ -18,12 +18,31 @@ metadata_folds <- vfold_cv(metadata, v = 10, repeats = 5, strata = age)
 
 alpha_grid <- seq(0.05, 1, by = 0.05)
 
+array_task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
+if (array_task_id != "") {
+  array_task_id <- as.integer(array_task_id)
+  repeat_name <- paste0("Repeat", array_task_id)
+  fold_indices <- grep(paste0("^", repeat_name), metadata_folds$id)
+
+  if (length(fold_indices) == 0) {
+    folds_per_chunk <- 10
+    first_fold <- ((array_task_id - 1) * folds_per_chunk) + 1
+    last_fold <- min(array_task_id * folds_per_chunk, nrow(metadata_folds))
+    fold_indices <- first_fold:last_fold
+  }
+
+  output_suffix <- paste0("_chunk_", sprintf("%02d", array_task_id))
+} else {
+  fold_indices <- seq_len(nrow(metadata_folds))
+  output_suffix <- ""
+}
+
 all_performance <- data.frame()
 all_residuals <- data.frame()
 all_selected_cpgs <- data.frame()
 all_alpha_tuning <- data.frame()
 
-for (i in seq_len(nrow(metadata_folds))) {
+for (i in fold_indices) {
   train_metadata <- analysis(metadata_folds$splits[[i]])
   test_metadata <- assessment(metadata_folds$splits[[i]])
 
@@ -102,6 +121,12 @@ repeated_k_fold_summary <- data.frame(
   sd_selected_cpgs = sd(all_performance$selected_cpgs),
   min_selected_cpgs = min(all_performance$selected_cpgs),
   max_selected_cpgs = max(all_performance$selected_cpgs),
+  mean_selected_alpha = mean(all_performance$selected_alpha),
+  sd_selected_alpha = sd(all_performance$selected_alpha),
+  min_selected_alpha = min(all_performance$selected_alpha),
+  max_selected_alpha = max(all_performance$selected_alpha),
+  mean_lambda_min = mean(all_performance$lambda_min),
+  mean_lambda_1se = mean(all_performance$lambda_1se),
   mean_mae = mean(all_performance$mae),
   sd_mae = sd(all_performance$mae),
   mean_median_absolute_error = mean(all_performance$median_absolute_error),
@@ -114,30 +139,50 @@ repeated_k_fold_summary <- data.frame(
 
 write.csv(
   all_performance,
-  "results/internal_validation/repeated_k_fold_per_fold_summary.csv",
+  paste0(
+    "results/internal_validation/repeated_k_fold_per_fold_summary",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   all_residuals,
-  "results/internal_validation/repeated_k_fold_residuals.csv",
+  paste0(
+    "results/internal_validation/repeated_k_fold_residuals",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   all_selected_cpgs,
-  "results/internal_validation/repeated_k_fold_selected_cpgs.csv",
+  paste0(
+    "results/internal_validation/repeated_k_fold_selected_cpgs",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   all_alpha_tuning,
-  "results/internal_validation/repeated_k_fold_alpha_tuning.csv",
+  paste0(
+    "results/internal_validation/repeated_k_fold_alpha_tuning",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   repeated_k_fold_summary,
-  "results/internal_validation/repeated_k_fold_summary.csv",
+  paste0(
+    "results/internal_validation/repeated_k_fold_summary",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )

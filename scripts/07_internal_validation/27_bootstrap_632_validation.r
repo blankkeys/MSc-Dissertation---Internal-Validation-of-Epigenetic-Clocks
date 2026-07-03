@@ -21,6 +21,19 @@ n_bootstrap <- 100
 n_samples <- nrow(x)
 alpha_grid <- seq(0.05, 1, by = 0.05)
 
+array_task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
+if (array_task_id != "") {
+  array_task_id <- as.integer(array_task_id)
+  bootstraps_per_chunk <- 10
+  first_bootstrap <- ((array_task_id - 1) * bootstraps_per_chunk) + 1
+  last_bootstrap <- min(array_task_id * bootstraps_per_chunk, n_bootstrap)
+  bootstrap_indices <- first_bootstrap:last_bootstrap
+  output_suffix <- paste0("_chunk_", sprintf("%02d", array_task_id))
+} else {
+  bootstrap_indices <- seq_len(n_bootstrap)
+  output_suffix <- ""
+}
+
 bootstrap_performance <- data.frame()
 
 bootstrap_oob_residuals <- data.frame()
@@ -29,7 +42,9 @@ bootstrap_alpha_tuning <- data.frame()
 
 # bootstrap training set and out of bag test set
 # out of bag is samples not used for training (on average 36.8% of samples)
-for (i in seq_len(n_bootstrap)) {
+for (i in bootstrap_indices) {
+  set.seed(123 + i)
+
   # Sample individuals with replacement to create the bootstrap training set
   # randomply samples sample numbers from the dataset
   # with replacement means the same sample can be selected multiple times, 
@@ -184,6 +199,12 @@ bootstrap_summary <- data.frame(
   sd_selected_cpgs = sd(bootstrap_performance$selected_cpgs),
   min_selected_cpgs = min(bootstrap_performance$selected_cpgs),
   max_selected_cpgs = max(bootstrap_performance$selected_cpgs),
+  mean_selected_alpha = mean(bootstrap_performance$selected_alpha),
+  sd_selected_alpha = sd(bootstrap_performance$selected_alpha),
+  min_selected_alpha = min(bootstrap_performance$selected_alpha),
+  max_selected_alpha = max(bootstrap_performance$selected_alpha),
+  mean_lambda_min = mean(bootstrap_performance$lambda_min),
+  mean_lambda_1se = mean(bootstrap_performance$lambda_1se),
   mean_unique_training_samples = mean(bootstrap_performance$unique_training_samples),
   mean_out_of_bag_samples = mean(bootstrap_performance$out_of_bag_samples),
   mean_apparent_mae = mean(bootstrap_performance$apparent_mae),
@@ -214,30 +235,50 @@ bootstrap_summary <- data.frame(
 
 write.csv(
   bootstrap_performance,
-  "results/internal_validation/bootstrap_632_per_resample_summary.csv",
+  paste0(
+    "results/internal_validation/bootstrap_632_per_resample_summary",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   bootstrap_oob_residuals,
-  "results/internal_validation/bootstrap_oob_residuals.csv",
+  paste0(
+    "results/internal_validation/bootstrap_oob_residuals",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   bootstrap_selected_cpgs,
-  "results/internal_validation/bootstrap_selected_cpgs.csv",
+  paste0(
+    "results/internal_validation/bootstrap_selected_cpgs",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   bootstrap_alpha_tuning,
-  "results/internal_validation/bootstrap_alpha_tuning.csv",
+  paste0(
+    "results/internal_validation/bootstrap_alpha_tuning",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   bootstrap_summary,
-  "results/internal_validation/bootstrap_632_summary.csv",
+  paste0(
+    "results/internal_validation/bootstrap_632_summary",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )

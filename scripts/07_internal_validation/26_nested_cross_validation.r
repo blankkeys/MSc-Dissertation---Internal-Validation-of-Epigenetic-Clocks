@@ -26,12 +26,21 @@ nested_folds <- nested_cv(
 # Values from 0.05 to 1.00 test elastic-net mixtures from ridge-like to lasso.
 alpha_grid <- seq(0.05, 1, by = 0.05)
 
+array_task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
+if (array_task_id != "") {
+  fold_indices <- as.integer(array_task_id)
+  output_suffix <- paste0("_chunk_", sprintf("%02d", as.integer(array_task_id)))
+} else {
+  fold_indices <- seq_len(nrow(nested_folds))
+  output_suffix <- ""
+}
+
 outer_performance <- data.frame()
 inner_alpha_performance <- data.frame()
 outer_residuals <- data.frame()
 outer_selected_cpgs <- data.frame()
 
-for (i in seq_len(nrow(nested_folds))) {
+for (i in fold_indices) {
   outer_train_metadata <- analysis(nested_folds$splits[[i]])
   outer_test_metadata <- assessment(nested_folds$splits[[i]])
   inner_folds <- nested_folds$inner_resamples[[i]]
@@ -171,6 +180,12 @@ nested_cv_summary <- data.frame(
   sd_selected_cpgs = sd(outer_performance$selected_cpgs),
   min_selected_cpgs = min(outer_performance$selected_cpgs),
   max_selected_cpgs = max(outer_performance$selected_cpgs),
+  mean_selected_alpha = mean(outer_performance$selected_alpha),
+  sd_selected_alpha = sd(outer_performance$selected_alpha),
+  min_selected_alpha = min(outer_performance$selected_alpha),
+  max_selected_alpha = max(outer_performance$selected_alpha),
+  mean_lambda_min = mean(outer_performance$lambda_min),
+  mean_lambda_1se = mean(outer_performance$lambda_1se),
   mean_mae = mean(outer_performance$mae),
   sd_mae = sd(outer_performance$mae),
   mean_median_absolute_error = mean(outer_performance$median_absolute_error),
@@ -183,30 +198,50 @@ nested_cv_summary <- data.frame(
 
 write.csv(
   outer_performance,
-  "results/internal_validation/nested_cross_validation_outer_fold_summary.csv",
+  paste0(
+    "results/internal_validation/nested_cross_validation_outer_fold_summary",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   outer_residuals,
-  "results/internal_validation/nested_cross_validation_residuals.csv",
+  paste0(
+    "results/internal_validation/nested_cross_validation_residuals",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   inner_alpha_performance,
-  "results/internal_validation/nested_cross_validation_inner_alpha_summary.csv",
+  paste0(
+    "results/internal_validation/nested_cross_validation_inner_alpha_summary",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   outer_selected_cpgs,
-  "results/internal_validation/nested_cross_validation_selected_cpgs.csv",
+  paste0(
+    "results/internal_validation/nested_cross_validation_selected_cpgs",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
 
 write.csv(
   nested_cv_summary,
-  "results/internal_validation/nested_cross_validation_summary.csv",
+  paste0(
+    "results/internal_validation/nested_cross_validation_summary",
+    output_suffix,
+    ".csv"
+  ),
   row.names = FALSE
 )
