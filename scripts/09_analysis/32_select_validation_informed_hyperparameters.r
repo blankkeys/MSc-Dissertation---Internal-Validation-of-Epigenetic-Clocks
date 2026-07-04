@@ -1,10 +1,12 @@
-# Select validation-informed alpha values for final candidate clocks
+# Select validation-informed alpha and lambda values for final candidate clocks
+# Each internal validation method is reduced to one representative parameter set
+# Alpha is selected by the most frequent choice, with lower validation error used to break ties
+# Lambda is the median lambda_min among models that selected that alpha
 
 dir.create("results/analysis", recursive = TRUE, showWarnings = FALSE)
 
 method_sources <- data.frame(
   validation_method = c(
-    "full_data_tuned_alpha_baseline",
     "single_train_test_split",
     "repeated_train_test_split",
     "k_fold_cross_validation",
@@ -13,7 +15,6 @@ method_sources <- data.frame(
     "bootstrap_oob"
   ),
   performance_file = c(
-    "results/modelling/elastic_net_final_model_hyperparameters.csv",
     "results/internal_validation/single_train_test_split_summary.csv",
     "results/internal_validation/repeated_train_test_split_per_split_summary.csv",
     "results/internal_validation/k_fold_per_fold_summary.csv",
@@ -22,7 +23,6 @@ method_sources <- data.frame(
     "results/internal_validation/bootstrap_632_per_resample_summary.csv"
   ),
   summary_file = c(
-    "results/internal_validation/apparent_performance_summary.csv",
     "results/internal_validation/single_train_test_split_summary.csv",
     "results/internal_validation/repeated_train_test_split_summary.csv",
     "results/internal_validation/k_fold_summary.csv",
@@ -36,11 +36,9 @@ method_sources <- data.frame(
     "mae",
     "mae",
     "mae",
-    "mae",
     "oob_mae"
   ),
   internal_estimate_type = c(
-    "apparent",
     "held_out_test",
     "repeated_held_out_test",
     "k_fold",
@@ -142,8 +140,15 @@ for (i in seq_len(nrow(method_sources))) {
       alpha_selection_count = sum(selected_alpha_rows),
       alpha_selection_total = nrow(performance_data),
       selected_alpha_mean_error = selected_alpha_mean_error,
-      selected_alpha_mean_lambda_min = mean(performance_data$lambda_min[selected_alpha_rows]),
-      selected_alpha_mean_lambda_1se = mean(performance_data$lambda_1se[selected_alpha_rows]),
+      selected_lambda_min = median(
+        performance_data$lambda_min[selected_alpha_rows],
+        na.rm = TRUE
+      ),
+      selected_lambda_1se = median(
+        performance_data$lambda_1se[selected_alpha_rows],
+        na.rm = TRUE
+      ),
+      lambda_selection_rule = "median lambda_min among models selecting chosen alpha",
       internal_estimated_mae = internal_estimated_mae,
       internal_estimated_rmse = internal_estimated_rmse,
       used_external_data_for_selection = FALSE,

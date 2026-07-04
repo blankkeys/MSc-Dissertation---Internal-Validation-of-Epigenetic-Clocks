@@ -40,6 +40,15 @@ optional_column <- function(summary_data, column_name) {
   rep(NA_real_, nrow(summary_data))
 }
 
+# Return a character column if it exists, otherwise return NA character values
+optional_character_column <- function(summary_data, column_name) {
+  if (column_name %in% names(summary_data)) {
+    return(summary_data[[column_name]])
+  }
+
+  rep(NA_character_, nrow(summary_data))
+}
+
 # Convert one internal validation summary into a standard format
 # used_for_independent_validation is FALSE for apparent performance because it reuses training data
 add_internal_method <- function(
@@ -187,6 +196,8 @@ if (!is.null(external_baseline)) {
   baseline_external <- data.frame(
     validation_method = "full_data_tuned_alpha_baseline",
     external_model_type = "final_full_data_clock",
+    external_clock_type = "full_data_tuned_alpha",
+    external_lambda_source = "cv.glmnet_lambda_min",
     external_samples = external_baseline$samples[1],
     external_mae = external_baseline$mae[1],
     external_rmse = external_baseline$rmse[1],
@@ -225,7 +236,18 @@ if (!is.null(validation_informed_external) && nrow(validation_informed_external)
   # Standardise validation-informed external results for merging
   validation_informed_external <- data.frame(
     validation_method = validation_informed_external$validation_method,
-    external_model_type = "validation_informed_clock",
+    external_model_type = optional_character_column(
+      validation_informed_external,
+      "clock_type"
+    ),
+    external_clock_type = optional_character_column(
+      validation_informed_external,
+      "clock_type"
+    ),
+    external_lambda_source = optional_character_column(
+      validation_informed_external,
+      "lambda_source"
+    ),
     external_samples = validation_informed_external$samples,
     external_mae = validation_informed_external$external_mae,
     external_rmse = validation_informed_external$external_rmse,
@@ -276,6 +298,8 @@ if (nrow(external_results) == 0) {
   external_results <- data.frame(
     validation_method = character(),
     external_model_type = character(),
+    external_clock_type = character(),
+    external_lambda_source = character(),
     external_samples = numeric(),
     external_mae = numeric(),
     external_rmse = numeric(),

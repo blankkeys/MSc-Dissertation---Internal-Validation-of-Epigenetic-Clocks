@@ -16,9 +16,9 @@ metadata <- read.csv("data/GSE87571/modelling_metadata_age_model.csv")
 x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 y <- metadata$age
 
-# Test alpha values from 0.05 to 1.00 and keep the alpha with the lowest CV error.
+# Test ridge-like, balanced and lasso-like elastic-net alpha values.
 # Lambda is selected by cv.glmnet within each alpha value.
-alpha_grid <- seq(0.05, 1, by = 0.05)
+alpha_grid <- c(0.25, 0.50, 0.75)
 alpha_tuned_model <- tune_alpha_model(x, y, alpha_grid)
 elastic_net_model <- alpha_tuned_model$model
 

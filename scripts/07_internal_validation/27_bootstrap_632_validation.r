@@ -19,7 +19,7 @@ y <- metadata$age
 # Efron and Tibshirani recommend 50 to 200 bootstrap samples for this approach
 n_bootstrap <- 100
 n_samples <- nrow(x)
-alpha_grid <- seq(0.05, 1, by = 0.05)
+alpha_grid <- c(0.25, 0.50, 0.75)
 
 array_task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
 if (array_task_id != "") {

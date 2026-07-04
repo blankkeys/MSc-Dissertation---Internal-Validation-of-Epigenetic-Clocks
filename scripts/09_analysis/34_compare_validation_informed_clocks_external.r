@@ -1,6 +1,7 @@
-# Externally validate validation-informed clocks in GSE42861 controls
-# Each clock is trained on GSE87571 using a validation-informed alpha
-# The external dataset is only used for final testing, not for selecting alpha or lambda
+# Externally validate final clocks in GSE42861 controls
+# The benchmark clock uses alpha 0.5 with lambda selected by cv.glmnet
+# Validation-parameter clocks use alpha/lambda values carried forward from internal validation
+# The external dataset is only used for final testing, not for selecting parameters
 
 dir.create(
   "results/external_validation/validation_informed_clocks",
@@ -34,7 +35,7 @@ external_performance <- data.frame()
 compatibility_summary <- data.frame()
 missing_cpg_summary <- data.frame()
 
-# Loop through each validation-informed clock and apply it to GSE42861
+# Loop through each fitted clock and apply it to GSE42861
 for (method in unique(clock_coefficients$validation_method)) {
   method_coefficients <- clock_coefficients[
     clock_coefficients$validation_method == method,
@@ -74,6 +75,12 @@ for (method in unique(clock_coefficients$validation_method)) {
     next
   }
 
+  method_clock_summary <- clock_summary[
+    clock_summary$validation_method == method,
+  ]
+  clock_type <- method_clock_summary$clock_type[1]
+  lambda_source <- method_clock_summary$lambda_source[1]
+
 # Build the external predictor matrix using the selected CpGs in coefficient order
   x_external <- t(external_beta_matrix[
     selected_coefficients$cpg,
@@ -93,6 +100,8 @@ for (method in unique(clock_coefficients$validation_method)) {
 
   method_predictions <- data.frame(
     validation_method = method,
+    clock_type = clock_type,
+    lambda_source = lambda_source,
     sample_id = external_metadata$Sample_Name,
     geo_accession = external_metadata$geo_accession,
     age = y_external,
@@ -104,16 +113,14 @@ for (method in unique(clock_coefficients$validation_method)) {
     stringsAsFactors = FALSE
   )
 
-  method_clock_summary <- clock_summary[
-    clock_summary$validation_method == method,
-  ]
-
 # Summarise external prediction performance for this clock
 # The internal-external gaps show whether internal validation under- or over-estimated external error
   external_performance <- rbind(
     external_performance,
     data.frame(
       validation_method = method,
+      clock_type = clock_type,
+      lambda_source = lambda_source,
       samples = length(y_external),
       selected_alpha = method_clock_summary$selected_alpha[1],
       lambda_min = method_clock_summary$lambda_min[1],

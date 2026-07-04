@@ -31,7 +31,7 @@ x_test <- x[test_metadata$sample_id, ] # x_test is the test data matrix with sam
 y_test <- test_metadata$age # y_test is the vector of ages corresponding to the test samples
 
 # Tune alpha and lambda using the training samples only
-alpha_grid <- seq(0.05, 1, by = 0.05)
+alpha_grid <- c(0.25, 0.50, 0.75)
 alpha_tuned_model <- tune_alpha_model(x_train, y_train, alpha_grid)
 train_test_model <- alpha_tuned_model$model
 alpha_tuning <- alpha_tuned_model$alpha_performance

@@ -19,7 +19,7 @@ x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 # v = 10 is the number of folds, and strata = age ensures similar age distributions in each fold
 metadata_folds <- vfold_cv(metadata, v = 10, strata = age)
 
-alpha_grid <- seq(0.05, 1, by = 0.05)
+alpha_grid <- c(0.25, 0.50, 0.75)
 
 all_performance <- data.frame()
 all_residuals <- data.frame()

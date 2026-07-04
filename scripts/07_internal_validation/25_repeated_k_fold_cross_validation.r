@@ -16,7 +16,7 @@ x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 
 metadata_folds <- vfold_cv(metadata, v = 10, repeats = 5, strata = age)
 
-alpha_grid <- seq(0.05, 1, by = 0.05)
+alpha_grid <- c(0.25, 0.50, 0.75)
 
 array_task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
 if (array_task_id != "") {
@@ -43,6 +43,11 @@ all_selected_cpgs <- data.frame()
 all_alpha_tuning <- data.frame()
 
 for (i in fold_indices) {
+  fold_id <- metadata_folds$id[i]
+  if ("id2" %in% names(metadata_folds)) {
+    fold_id <- paste(metadata_folds$id[i], metadata_folds$id2[i], sep = "_")
+  }
+
   train_metadata <- analysis(metadata_folds$splits[[i]])
   test_metadata <- assessment(metadata_folds$splits[[i]])
 
@@ -61,7 +66,7 @@ for (i in fold_indices) {
   fold_selected_cpgs <- get_selected_cpgs(
     k_fold_model,
     "repeated_k_fold_cross_validation",
-    metadata_folds$id[i]
+    fold_id
   )
   fold_selected_cpgs$selected_alpha <- alpha_tuned_model$selected_alpha
   fold_selected_cpgs$lambda_min <- k_fold_model$lambda.min
@@ -69,7 +74,7 @@ for (i in fold_indices) {
 
   fold_alpha_tuning <- alpha_tuned_model$alpha_performance
   fold_alpha_tuning$validation_method <- "repeated_k_fold_cross_validation"
-  fold_alpha_tuning$resample_id <- metadata_folds$id[i]
+  fold_alpha_tuning$resample_id <- fold_id
 
   # Predict age in the held-out fold
   predicted_age <- predict(
@@ -82,7 +87,7 @@ for (i in fold_indices) {
 
   fold_residuals <- data.frame(
     validation_method = "repeated_k_fold_cross_validation",
-    resample_id = metadata_folds$id[i],
+    resample_id = fold_id,
     sample_id = test_metadata$sample_id,
     geo_accession = test_metadata$geo_accession,
     age = y_test,
@@ -92,7 +97,7 @@ for (i in fold_indices) {
   )
 
   fold_performance <- data.frame(
-    fold = metadata_folds$id[i],
+    fold = fold_id,
     training_samples = length(y_train),
     test_samples = length(y_test),
     input_cpgs = ncol(x),

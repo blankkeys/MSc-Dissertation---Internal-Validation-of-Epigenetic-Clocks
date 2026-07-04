@@ -23,8 +23,8 @@ nested_folds <- nested_cv(
 )
 
 # Alpha controls the ridge/lasso mixture in glmnet.
-# Values from 0.05 to 1.00 test elastic-net mixtures from ridge-like to lasso.
-alpha_grid <- seq(0.05, 1, by = 0.05)
+# Values test ridge-like, balanced and lasso-like elastic-net mixtures.
+alpha_grid <- c(0.25, 0.50, 0.75)
 
 array_task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
 if (array_task_id != "") {

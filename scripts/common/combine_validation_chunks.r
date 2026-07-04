@@ -19,7 +19,32 @@ read_validation_chunks <- function(pattern, expected_chunks) {
     )
   }
 
-  do.call(rbind, lapply(files, read.csv))
+  chunk_data <- do.call(rbind, lapply(files, read.csv))
+
+  check_alpha_values(chunk_data, "selected_alpha")
+  check_alpha_values(chunk_data, "alpha")
+
+  chunk_data
+}
+
+check_alpha_values <- function(chunk_data, column_name) {
+  if (!column_name %in% names(chunk_data)) {
+    return(invisible(NULL))
+  }
+
+  allowed_alpha <- c(0.25, 0.50, 0.75)
+  observed_alpha <- sort(unique(chunk_data[[column_name]]))
+  unexpected_alpha <- setdiff(observed_alpha, allowed_alpha)
+
+  if (length(unexpected_alpha) > 0) {
+    stop(
+      "Unexpected alpha values found in combined chunks: ",
+      paste(unexpected_alpha, collapse = ", "),
+      ". Delete stale chunk files and rerun the split jobs"
+    )
+  }
+
+  invisible(NULL)
 }
 
 summarise_validation_performance <- function(performance, count_name) {

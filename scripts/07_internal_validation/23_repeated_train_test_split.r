@@ -19,7 +19,7 @@ x <- t(beta_matrix[, match(metadata$sample_id, colnames(beta_matrix))])
 # Stratify by age so training and test sets have similar age distributions
 metadata_splits <- mc_cv(metadata, prop = 0.8, times = 10, strata = age)
 
-alpha_grid <- seq(0.05, 1, by = 0.05)
+alpha_grid <- c(0.25, 0.50, 0.75)
 
 # data frame to store performance metrics for each split
 all_performance <- data.frame()
