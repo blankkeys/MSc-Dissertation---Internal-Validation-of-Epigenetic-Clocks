@@ -16,5 +16,7 @@ cd /data/home/bt25127/Msc_Dissertation
 mkdir -p logs
 mkdir -p results/internal_validation
 
-apptainer exec --cleanenv containers/bioconductor_3_22.sif \
+apptainer exec --cleanenv \
+  --env SLURM_ARRAY_TASK_ID="${SLURM_ARRAY_TASK_ID}" \
+  containers/bioconductor_3_22.sif \
   Rscript scripts/07_internal_validation/27_bootstrap_632_validation.r
