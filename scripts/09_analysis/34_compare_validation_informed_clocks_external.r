@@ -24,11 +24,46 @@ clock_coefficients <- read.csv(
   stringsAsFactors = FALSE
 )
 
+# Choose the metadata sample ID column that matches the beta matrix columns
+get_external_sample_id <- function(metadata, beta_matrix) {
+  candidate_ids <- list()
+
+  for (column_name in c("Sample_Name", "sample_id", "geo_accession", "Basename")) {
+    if (column_name %in% names(metadata)) {
+      candidate_ids[[column_name]] <- metadata[[column_name]]
+    }
+  }
+
+  if ("Basename" %in% names(metadata)) {
+    candidate_ids[["Basename_file"]] <- basename(metadata$Basename)
+  }
+
+  for (sample_id in candidate_ids) {
+    if (any(sample_id %in% colnames(beta_matrix))) {
+      return(sample_id)
+    }
+  }
+
+  stop(
+    "No GSE42861 sample ID column matches the beta matrix columns. ",
+    "First beta columns: ",
+    paste(head(colnames(beta_matrix)), collapse = ", "),
+    ". Metadata columns: ",
+    paste(names(metadata), collapse = ", ")
+  )
+}
+
 # Keep only external samples that have both methylation values and age metadata
-external_metadata <- external_metadata[
-  external_metadata$Sample_Name %in% colnames(external_beta_matrix) &
-    !is.na(external_metadata$age),
-]
+external_sample_id <- get_external_sample_id(external_metadata, external_beta_matrix)
+matched_external_samples <- external_sample_id %in% colnames(external_beta_matrix) &
+  !is.na(external_metadata$age)
+
+external_metadata <- external_metadata[matched_external_samples, ]
+external_sample_id <- external_sample_id[matched_external_samples]
+
+if (nrow(external_metadata) == 0) {
+  stop("No GSE42861 samples with matched beta values and age metadata were found")
+}
 
 all_predictions <- data.frame()
 external_performance <- data.frame()
@@ -84,7 +119,7 @@ for (method in unique(clock_coefficients$validation_method)) {
 # Build the external predictor matrix using the selected CpGs in coefficient order
   x_external <- t(external_beta_matrix[
     selected_coefficients$cpg,
-    match(external_metadata$Sample_Name, colnames(external_beta_matrix)),
+    match(external_sample_id, colnames(external_beta_matrix)),
     drop = FALSE
   ])
   y_external <- external_metadata$age
@@ -102,7 +137,7 @@ for (method in unique(clock_coefficients$validation_method)) {
     validation_method = method,
     clock_type = clock_type,
     lambda_source = lambda_source,
-    sample_id = external_metadata$Sample_Name,
+    sample_id = external_sample_id,
     geo_accession = external_metadata$geo_accession,
     age = y_external,
     predicted_age = predicted_age,
