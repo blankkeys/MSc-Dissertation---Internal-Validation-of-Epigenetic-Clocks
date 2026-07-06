@@ -1,5 +1,5 @@
 # Fit final clocks from validation-derived parameters
-# Benchmark clock uses alpha 0.5 with lambda selected by cv.glmnet
+# Benchmark clocks use fixed alpha values with lambda selected by cv.glmnet
 # Validation-informed clocks use alpha and lambda carried forward from internal validation
 # glmnet is used for fixed-lambda clocks so lambda is not re-selected
 
@@ -73,9 +73,9 @@ add_clock_outputs <- function(
   )
 }
 
-# Conventional benchmark clock
-# This tests the standard alpha 0.5 elastic-net approach against validation-derived clocks
-benchmark_model <- cv.glmnet(
+# Conventional benchmark clock using alpha 0.5
+# This tests the standard balanced elastic-net approach against validation-derived clocks
+benchmark_alpha_0.5_model <- cv.glmnet(
   x = x,
   y = y,
   alpha = 0.5,
@@ -83,21 +83,47 @@ benchmark_model <- cv.glmnet(
   foldid = foldid
 )
 
-benchmark_outputs <- add_clock_outputs(
+benchmark_alpha_0.5_outputs <- add_clock_outputs(
   validation_method = "benchmark_alpha_0.5_cv_lambda",
   clock_type = "benchmark_alpha_0.5",
   lambda_source = "cv.glmnet_lambda_min",
   selected_alpha = 0.5,
-  lambda_min = benchmark_model$lambda.min,
-  lambda_1se = benchmark_model$lambda.1se,
-  coefficients = as.matrix(coef(benchmark_model, s = "lambda.min")),
+  lambda_min = benchmark_alpha_0.5_model$lambda.min,
+  lambda_1se = benchmark_alpha_0.5_model$lambda.1se,
+  coefficients = as.matrix(coef(benchmark_alpha_0.5_model, s = "lambda.min")),
   internal_estimated_mae = NA_real_,
   internal_estimated_rmse = NA_real_
 )
 
-clock_models[["benchmark_alpha_0.5_cv_lambda"]] <- benchmark_model
-clock_coefficients <- rbind(clock_coefficients, benchmark_outputs$coefficients)
-clock_summary <- rbind(clock_summary, benchmark_outputs$summary)
+clock_models[["benchmark_alpha_0.5_cv_lambda"]] <- benchmark_alpha_0.5_model
+clock_coefficients <- rbind(clock_coefficients, benchmark_alpha_0.5_outputs$coefficients)
+clock_summary <- rbind(clock_summary, benchmark_alpha_0.5_outputs$summary)
+
+# Conventional benchmark clock using alpha 0.25
+# This tests whether the tuned alpha value helps even when lambda is selected by cv.glmnet
+benchmark_alpha_0.25_model <- cv.glmnet(
+  x = x,
+  y = y,
+  alpha = 0.25,
+  family = "gaussian",
+  foldid = foldid
+)
+
+benchmark_alpha_0.25_outputs <- add_clock_outputs(
+  validation_method = "benchmark_alpha_0.25_cv_lambda",
+  clock_type = "benchmark_alpha_0.25",
+  lambda_source = "cv.glmnet_lambda_min",
+  selected_alpha = 0.25,
+  lambda_min = benchmark_alpha_0.25_model$lambda.min,
+  lambda_1se = benchmark_alpha_0.25_model$lambda.1se,
+  coefficients = as.matrix(coef(benchmark_alpha_0.25_model, s = "lambda.min")),
+  internal_estimated_mae = NA_real_,
+  internal_estimated_rmse = NA_real_
+)
+
+clock_models[["benchmark_alpha_0.25_cv_lambda"]] <- benchmark_alpha_0.25_model
+clock_coefficients <- rbind(clock_coefficients, benchmark_alpha_0.25_outputs$coefficients)
+clock_summary <- rbind(clock_summary, benchmark_alpha_0.25_outputs$summary)
 
 # Validation-informed clocks
 # Each clock uses the alpha/lambda pair selected from one internal validation method
