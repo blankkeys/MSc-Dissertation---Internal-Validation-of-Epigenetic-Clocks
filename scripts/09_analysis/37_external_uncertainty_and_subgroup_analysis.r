@@ -48,9 +48,19 @@ predictions$absolute_error <- abs(predictions$AAA)
 
 # Add sex labels from the external metadata for subgroup summaries
 external_metadata <- read.csv(external_metadata_file, stringsAsFactors = FALSE)
-predictions$sex <- external_metadata$sex[
-  match(predictions$sample_id, external_metadata$Sample_Name)
-]
+predictions$sex <- NA_character_
+
+if ("Sample_Name" %in% names(external_metadata)) {
+  sample_matches <- match(predictions$sample_id, external_metadata$Sample_Name)
+  matched <- !is.na(sample_matches)
+  predictions$sex[matched] <- external_metadata$sex[sample_matches[matched]]
+}
+
+if ("geo_accession" %in% names(external_metadata) && "geo_accession" %in% names(predictions)) {
+  geo_matches <- match(predictions$geo_accession, external_metadata$geo_accession)
+  matched <- is.na(predictions$sex) & !is.na(geo_matches)
+  predictions$sex[matched] <- external_metadata$sex[geo_matches[matched]]
+}
 
 # RAA is residual age acceleration after adjusting predicted age for chronological age
 prediction_groups <- split(
