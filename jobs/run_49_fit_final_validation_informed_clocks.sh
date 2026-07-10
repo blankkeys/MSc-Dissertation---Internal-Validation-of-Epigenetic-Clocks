@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=128G
 
-# Slurm job for 33_fit_validation_informed_clocks.r
+# Slurm job for 49_fit_final_validation_informed_clocks.r
 
 set -euo pipefail
 
@@ -16,4 +16,4 @@ mkdir -p logs
 mkdir -p results/modelling/validation_informed_clocks
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/09_analysis/33_fit_validation_informed_clocks.r
+  Rscript scripts/09_validation_informed_clocks/49_fit_final_validation_informed_clocks.r

@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=64G
 
-# Slurm job for 34_compare_validation_informed_clocks_external.r
+# Slurm job for 50_apply_final_clocks_to_external_gse42861.r
 
 set -euo pipefail
 
@@ -16,4 +16,4 @@ mkdir -p logs
 mkdir -p results/external_validation/validation_informed_clocks
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/09_analysis/34_compare_validation_informed_clocks_external.r
+  Rscript scripts/09_validation_informed_clocks/50_apply_final_clocks_to_external_gse42861.r

@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=cpg_stability
+#SBATCH --job-name=internal_uncertainty
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
 
-# Slurm job for 35_cpg_selection_and_hyperparameter_stability.r
+# Slurm job for 54_compare_internal_validation_uncertainty.r
 
 set -euo pipefail
 
@@ -16,4 +16,4 @@ mkdir -p logs
 mkdir -p results/analysis
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/09_analysis/35_cpg_selection_and_hyperparameter_stability.r
+  Rscript scripts/09_validation_informed_clocks/54_compare_internal_validation_uncertainty.r

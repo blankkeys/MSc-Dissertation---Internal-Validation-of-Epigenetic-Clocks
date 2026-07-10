@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
 
-# Slurm job for 31_internal_validation_age_acceleration_analysis.r
+# Slurm job for 47_summarise_internal_age_acceleration.r
 
 set -euo pipefail
 
@@ -16,4 +16,4 @@ mkdir -p logs
 mkdir -p results/analysis
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/09_analysis/31_internal_validation_age_acceleration_analysis.r
+  Rscript scripts/09_validation_informed_clocks/47_summarise_internal_age_acceleration.r

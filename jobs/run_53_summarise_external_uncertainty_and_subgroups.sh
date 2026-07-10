@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=final_validation_comparison
+#SBATCH --job-name=external_uncertainty
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
 
-# Slurm job for 36_final_internal_external_comparison.r
+# Slurm job for 53_summarise_external_uncertainty_and_subgroups.r
 
 set -euo pipefail
 
@@ -16,4 +16,4 @@ mkdir -p logs
 mkdir -p results/analysis
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/09_analysis/36_final_internal_external_comparison.r
+  Rscript scripts/09_validation_informed_clocks/53_summarise_external_uncertainty_and_subgroups.r

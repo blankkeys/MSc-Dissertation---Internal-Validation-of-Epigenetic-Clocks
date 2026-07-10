@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=64G
 
-# Slurm job for 09/09_data_exploration.r
+# Slurm job for scripts/04_preprocessing/09_data_exploration.r
 
 set -euo pipefail # Exit on error, treat unset variables as errors, and fail if any command in a pipeline fails.
 

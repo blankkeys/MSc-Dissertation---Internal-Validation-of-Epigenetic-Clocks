@@ -3,41 +3,15 @@
 # RAA means relative age acceleration, predicted DNAm age adjusted for chronological age using linear regression
 # Calibration checks whether predicted age follows chronological age with slope close to 1 and intercept close to 0
 
-dir.create("results/analysis", recursive = TRUE, showWarnings = FALSE)
+empirical_lower <- function(x) {
+  as.numeric(quantile(x, probs = 0.025, na.rm = TRUE))
+}
 
-# List the prediction/residual files created by each internal validation method
-# Apparent performance is included for comparison, but it is not independent validation
-residual_files <- data.frame(
-  validation_method = c(
-    "apparent_performance",
-    "single_train_test_split",
-    "repeated_train_test_split",
-    "k_fold_cross_validation",
-    "repeated_k_fold_cross_validation",
-    "nested_cross_validation",
-    "bootstrap_oob"
-  ),
-  used_for_validation = c(FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE),
-  file = c(
-    "results/internal_validation/apparent_performance_residuals.csv",
-    "results/internal_validation/single_train_test_split_residuals.csv",
-    "results/internal_validation/repeated_train_test_split_residuals.csv",
-    "results/internal_validation/k_fold_residuals.csv",
-    "results/internal_validation/repeated_k_fold_residuals.csv",
-    "results/internal_validation/nested_cross_validation_residuals.csv",
-    "results/internal_validation/bootstrap_oob_residuals.csv"
-  ),
-  stringsAsFactors = FALSE
-)
+empirical_upper <- function(x) {
+  as.numeric(quantile(x, probs = 0.975, na.rm = TRUE))
+}
 
-# Read one residual file and make sure residual and absolute error columns exist
-# residual is signed error, while absolute_error ignores direction
 read_residual_file <- function(validation_method, used_for_validation, file) {
-  if (!file.exists(file)) {
-    warning("Missing residual file: ", file)
-    return(NULL)
-  }
-
   residuals <- read.csv(file, stringsAsFactors = FALSE)
   residuals$validation_method <- validation_method
   residuals$used_for_validation <- used_for_validation
@@ -53,53 +27,40 @@ read_residual_file <- function(validation_method, used_for_validation, file) {
   residuals
 }
 
-# Combine all available internal validation prediction files into one table
-all_predictions <- do.call(
-  rbind,
-  lapply(
-    seq_len(nrow(residual_files)),
-    function(i) {
-      read_residual_file(
-        residual_files$validation_method[i],
-        residual_files$used_for_validation[i],
-        residual_files$file[i]
-      )
-    }
+add_age_acceleration <- function(predictions) {
+  # AAA is the direct signed difference between predicted DNAm age and chronological age
+  predictions$AAA <- predictions$residual
+
+  # RAA is the residual after regressing predicted DNAm age on chronological age
+  predictions$RAA <- NA_real_
+
+  for (method in unique(predictions$validation_method)) {
+    method_rows <- predictions$validation_method == method
+    calibration_model <- lm(predicted_age ~ age, data = predictions[method_rows, ])
+    predictions$RAA[method_rows] <- residuals(calibration_model)
+  }
+
+  predictions
+}
+
+add_age_bins <- function(predictions) {
+  predictions$age_bin <- cut(
+    predictions$age,
+    breaks = c(-Inf, 29, 44, 59, 74, Inf),
+    labels = c("14-29", "30-44", "45-59", "60-74", "75+"),
+    right = TRUE
   )
-)
 
-if (is.null(all_predictions) || nrow(all_predictions) == 0) {
-  stop("No internal validation residual files were available")
+  predictions
 }
 
-# AAA is the direct difference between predicted DNAm age and chronological age
-all_predictions$AAA <- all_predictions$residual
-
-# RAA is the residual after regressing predicted DNAm age on chronological age
-# This removes the linear age trend from predicted DNAm age
-all_predictions$RAA <- NA_real_
-for (method in unique(all_predictions$validation_method)) {
-  method_rows <- all_predictions$validation_method == method
-  calibration_model <- lm(predicted_age ~ age, data = all_predictions[method_rows, ])
-  all_predictions$RAA[method_rows] <- residuals(calibration_model)
-}
-
-# Functions used to calculate empirical 95% intervals
-# Empirical intervals use the observed residual percentiles instead of assuming normality
-empirical_lower <- function(x) {
-  as.numeric(quantile(x, probs = 0.025, na.rm = TRUE))
-}
-
-empirical_upper <- function(x) {
-  as.numeric(quantile(x, probs = 0.975, na.rm = TRUE))
-}
-
-# Summarise prediction error, calibration and age acceleration for one method
 summarise_method <- function(method_predictions) {
   # calibration_model estimates predicted age = intercept + slope * chronological age
   calibration_model <- lm(predicted_age ~ age, data = method_predictions)
+
   # aaa_age_model checks whether signed error changes with chronological age
   aaa_age_model <- lm(AAA ~ age, data = method_predictions)
+
   # absolute_error_age_model checks whether error size changes with chronological age
   absolute_error_age_model <- lm(absolute_error ~ age, data = method_predictions)
 
@@ -141,23 +102,6 @@ summarise_method <- function(method_predictions) {
   )
 }
 
-age_acceleration_summary <- do.call(
-  rbind,
-  lapply(
-    split(all_predictions, all_predictions$validation_method),
-    summarise_method
-  )
-)
-
-# Add age bins to test whether the clock performs differently in younger and older samples
-all_predictions$age_bin <- cut(
-  all_predictions$age,
-  breaks = c(-Inf, 29, 44, 59, 74, Inf),
-  labels = c("14-29", "30-44", "45-59", "60-74", "75+"),
-  right = TRUE
-)
-
-# Summarise prediction error separately within each age bin
 summarise_age_bin <- function(age_bin_predictions) {
   data.frame(
     validation_method = age_bin_predictions$validation_method[1],
@@ -181,6 +125,55 @@ summarise_age_bin <- function(age_bin_predictions) {
   )
 }
 
+dir.create("results/analysis", recursive = TRUE, showWarnings = FALSE)
+
+# List the prediction/residual files created by each internal validation method
+# Apparent performance is included for comparison, but it is not independent validation
+residual_files <- data.frame(
+  validation_method = c(
+    "apparent_performance",
+    "single_train_test_split",
+    "repeated_train_test_split",
+    "k_fold_cross_validation",
+    "repeated_k_fold_cross_validation",
+    "nested_cross_validation",
+    "bootstrap_oob"
+  ),
+  used_for_validation = c(FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE),
+  file = c(
+    "results/internal_validation/apparent_performance_residuals.csv",
+    "results/internal_validation/single_train_test_split_residuals.csv",
+    "results/internal_validation/repeated_train_test_split_residuals.csv",
+    "results/internal_validation/k_fold_residuals.csv",
+    "results/internal_validation/repeated_k_fold_residuals.csv",
+    "results/internal_validation/nested_cross_validation_residuals.csv",
+    "results/internal_validation/bootstrap_oob_residuals.csv"
+  ),
+  stringsAsFactors = FALSE
+)
+
+all_predictions <- do.call(
+  rbind,
+  lapply(seq_len(nrow(residual_files)), function(i) {
+    read_residual_file(
+      residual_files$validation_method[i],
+      residual_files$used_for_validation[i],
+      residual_files$file[i]
+    )
+  })
+)
+
+all_predictions <- add_age_acceleration(all_predictions)
+all_predictions <- add_age_bins(all_predictions)
+
+age_acceleration_summary <- do.call(
+  rbind,
+  lapply(
+    split(all_predictions, all_predictions$validation_method),
+    summarise_method
+  )
+)
+
 age_bin_summary <- do.call(
   rbind,
   lapply(
@@ -193,7 +186,6 @@ age_bin_summary <- do.call(
   )
 )
 
-# Save method-level, age-bin-level and prediction-level outputs
 write.csv(
   age_acceleration_summary,
   "results/analysis/internal_validation_aaa_raa_summary.csv",

@@ -1,31 +1,8 @@
 # Externally validate final clocks in GSE42861 controls
-# The benchmark clock uses alpha 0.5 with lambda selected by cv.glmnet
+# The benchmark clocks use fixed alpha values with lambda selected by cv.glmnet
 # Validation-parameter clocks use alpha/lambda values carried forward from internal validation
 # The external dataset is only used for final testing, not for selecting parameters
 
-dir.create(
-  "results/external_validation/validation_informed_clocks",
-  recursive = TRUE,
-  showWarnings = FALSE
-)
-
-# Load external beta values, external metadata and the validation-informed clock coefficients
-external_beta_matrix <- readRDS("data/GSE42861/beta_matrix.rds")
-training_beta_matrix <- readRDS("data/GSE87571/beta_matrix_age_model.rds")
-external_metadata <- read.csv(
-  "data/GSE42861/gse42861_qc_ready_sample_sheet_controls.csv",
-  stringsAsFactors = FALSE
-)
-clock_summary <- read.csv(
-  "results/modelling/validation_informed_clocks/validation_informed_clock_summary.csv",
-  stringsAsFactors = FALSE
-)
-clock_coefficients <- read.csv(
-  "results/modelling/validation_informed_clocks/validation_informed_clock_coefficients.csv",
-  stringsAsFactors = FALSE
-)
-
-# Choose the metadata sample ID column that matches the beta matrix columns
 get_external_sample_id <- function(metadata, beta_matrix) {
   candidate_ids <- list()
 
@@ -53,26 +30,6 @@ get_external_sample_id <- function(metadata, beta_matrix) {
     paste(names(metadata), collapse = ", ")
   )
 }
-
-# Keep only external samples that have both methylation values and age metadata
-external_sample_id <- get_external_sample_id(external_metadata, external_beta_matrix)
-matched_external_samples <- external_sample_id %in% colnames(external_beta_matrix) &
-  !is.na(external_metadata$age)
-
-external_metadata <- external_metadata[matched_external_samples, ]
-external_sample_id <- external_sample_id[matched_external_samples]
-
-if (nrow(external_metadata) == 0) {
-  stop("No GSE42861 samples with matched beta values and age metadata were found")
-}
-
-all_predictions <- data.frame()
-external_performance <- data.frame()
-all_imputed_predictions <- data.frame()
-imputed_external_performance <- data.frame()
-compatibility_summary <- data.frame()
-missing_cpg_summary <- data.frame()
-imputation_summary <- data.frame()
 
 summarise_external_performance <- function(
   method,
@@ -170,7 +127,124 @@ summarise_age_bin <- function(age_bin_predictions) {
   )
 }
 
-# Loop through each fitted clock and apply it to GSE42861
+add_age_bins <- function(predictions) {
+  if (nrow(predictions) == 0) {
+    return(predictions)
+  }
+
+  predictions$age_bin <- cut(
+    predictions$age,
+    breaks = c(-Inf, 29, 44, 59, 74, Inf),
+    labels = c("14-29", "30-44", "45-59", "60-74", "75+"),
+    right = TRUE
+  )
+
+  predictions
+}
+
+summarise_age_bins <- function(predictions) {
+  if (nrow(predictions) == 0) {
+    return(data.frame())
+  }
+
+  do.call(
+    rbind,
+    lapply(
+      split(
+        predictions,
+        list(predictions$validation_method, predictions$age_bin),
+        drop = TRUE
+      ),
+      summarise_age_bin
+    )
+  )
+}
+
+predict_from_coefficients <- function(beta_matrix, sample_ids, selected_coefficients, intercept) {
+  x_external <- t(beta_matrix[
+    selected_coefficients$cpg,
+    match(sample_ids, colnames(beta_matrix)),
+    drop = FALSE
+  ])
+
+  as.numeric(intercept + x_external %*% selected_coefficients$coefficient)
+}
+
+build_mean_imputed_beta_matrix <- function(
+  external_beta_matrix,
+  training_beta_matrix,
+  sample_ids,
+  selected_coefficients,
+  missing_cpgs
+) {
+  training_means <- rowMeans(
+    training_beta_matrix[missing_cpgs, , drop = FALSE],
+    na.rm = TRUE
+  )
+
+  imputed_beta_matrix <- matrix(
+    NA_real_,
+    nrow = nrow(selected_coefficients),
+    ncol = length(sample_ids),
+    dimnames = list(selected_coefficients$cpg, sample_ids)
+  )
+
+  available_cpgs <- setdiff(selected_coefficients$cpg, missing_cpgs)
+  imputed_beta_matrix[available_cpgs, ] <- external_beta_matrix[
+    available_cpgs,
+    match(sample_ids, colnames(external_beta_matrix)),
+    drop = FALSE
+  ]
+  imputed_beta_matrix[missing_cpgs, ] <- matrix(
+    training_means,
+    nrow = length(missing_cpgs),
+    ncol = ncol(imputed_beta_matrix)
+  )
+
+  list(beta_matrix = imputed_beta_matrix, training_means = training_means)
+}
+
+dir.create(
+  "results/external_validation/validation_informed_clocks",
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+external_beta_matrix <- readRDS("data/GSE42861/beta_matrix.rds")
+training_beta_matrix <- readRDS("data/GSE87571/beta_matrix_age_model.rds")
+external_metadata <- read.csv(
+  "data/GSE42861/gse42861_qc_ready_sample_sheet_controls.csv",
+  stringsAsFactors = FALSE
+)
+clock_summary <- read.csv(
+  "results/modelling/validation_informed_clocks/validation_informed_clock_summary.csv",
+  stringsAsFactors = FALSE
+)
+clock_coefficients <- read.csv(
+  "results/modelling/validation_informed_clocks/validation_informed_clock_coefficients.csv",
+  stringsAsFactors = FALSE
+)
+
+external_sample_id <- get_external_sample_id(external_metadata, external_beta_matrix)
+matched_external_samples <- external_sample_id %in% colnames(external_beta_matrix) &
+  !is.na(external_metadata$age)
+
+external_metadata <- external_metadata[matched_external_samples, ]
+external_sample_id <- external_sample_id[matched_external_samples]
+y_external <- external_metadata$age
+
+if (nrow(external_metadata) == 0) {
+  stop("No GSE42861 samples with matched beta values and age metadata were found")
+}
+
+all_predictions <- data.frame()
+external_performance <- data.frame()
+all_imputed_predictions <- data.frame()
+imputed_external_performance <- data.frame()
+compatibility_summary <- data.frame()
+missing_cpg_summary <- data.frame()
+imputation_summary <- data.frame()
+
 for (method in unique(clock_coefficients$validation_method)) {
   method_coefficients <- clock_coefficients[
     clock_coefficients$validation_method == method,
@@ -188,8 +262,7 @@ for (method in unique(clock_coefficients$validation_method)) {
   clock_type <- method_clock_summary$clock_type[1]
   lambda_source <- method_clock_summary$lambda_source[1]
 
-# Record whether every selected CpG in the clock exists in the external beta matrix
-# If any selected CpG is missing, that specific clock cannot be applied exactly
+  # Record whether every selected CpG in the clock exists in the external beta matrix
   missing_cpgs <- setdiff(selected_coefficients$cpg, rownames(external_beta_matrix))
   imputable_cpgs <- intersect(missing_cpgs, rownames(training_beta_matrix))
 
@@ -219,9 +292,12 @@ for (method in unique(clock_coefficients$validation_method)) {
     )
 
     if (length(missing_cpgs) == length(imputable_cpgs)) {
-      training_means <- rowMeans(
-        training_beta_matrix[missing_cpgs, , drop = FALSE],
-        na.rm = TRUE
+      imputed_data <- build_mean_imputed_beta_matrix(
+        external_beta_matrix,
+        training_beta_matrix,
+        external_sample_id,
+        selected_coefficients,
+        missing_cpgs
       )
 
       imputation_summary <- rbind(
@@ -229,34 +305,16 @@ for (method in unique(clock_coefficients$validation_method)) {
         data.frame(
           validation_method = method,
           cpg = missing_cpgs,
-          training_mean_beta = as.numeric(training_means),
+          training_mean_beta = as.numeric(imputed_data$training_means),
           stringsAsFactors = FALSE
         )
       )
 
-      imputed_beta_matrix <- matrix(
-        NA_real_,
-        nrow = nrow(selected_coefficients),
-        ncol = nrow(external_metadata),
-        dimnames = list(selected_coefficients$cpg, external_sample_id)
-      )
-
-      available_cpgs <- setdiff(selected_coefficients$cpg, missing_cpgs)
-      imputed_beta_matrix[available_cpgs, ] <- external_beta_matrix[
-        available_cpgs,
-        match(external_sample_id, colnames(external_beta_matrix)),
-        drop = FALSE
-      ]
-      imputed_beta_matrix[missing_cpgs, ] <- matrix(
-        training_means,
-        nrow = length(missing_cpgs),
-        ncol = ncol(imputed_beta_matrix)
-      )
-
-      x_external_imputed <- t(imputed_beta_matrix)
-      y_external <- external_metadata$age
-      imputed_predicted_age <- as.numeric(
-        intercept + x_external_imputed %*% selected_coefficients$coefficient
+      imputed_predicted_age <- predict_from_coefficients(
+        imputed_data$beta_matrix,
+        external_sample_id,
+        selected_coefficients,
+        intercept
       )
 
       imputed_external_performance <- rbind(
@@ -288,19 +346,13 @@ for (method in unique(clock_coefficients$validation_method)) {
     next
   }
 
-# Build the external predictor matrix using the selected CpGs in coefficient order
-  x_external <- t(external_beta_matrix[
-    selected_coefficients$cpg,
-    match(external_sample_id, colnames(external_beta_matrix)),
-    drop = FALSE
-  ])
-  y_external <- external_metadata$age
+  predicted_age <- predict_from_coefficients(
+    external_beta_matrix,
+    external_sample_id,
+    selected_coefficients,
+    intercept
+  )
 
-# Predict DNAm age by multiplying external beta values by the trained coefficients
-  predicted_age <- as.numeric(intercept + x_external %*% selected_coefficients$coefficient)
-
-# Summarise external prediction performance for this clock
-# The internal-external gaps show whether internal validation under- or over-estimated external error
   external_performance <- rbind(
     external_performance,
     summarise_external_performance(
@@ -327,54 +379,11 @@ for (method in unique(clock_coefficients$validation_method)) {
   )
 }
 
-# Add age bins so performance can be checked across younger and older external samples
-if (nrow(all_predictions) > 0) {
-  all_predictions$age_bin <- cut(
-    all_predictions$age,
-    breaks = c(-Inf, 29, 44, 59, 74, Inf),
-    labels = c("14-29", "30-44", "45-59", "60-74", "75+"),
-    right = TRUE
-  )
+all_predictions <- add_age_bins(all_predictions)
+all_imputed_predictions <- add_age_bins(all_imputed_predictions)
+external_age_bin_performance <- summarise_age_bins(all_predictions)
+imputed_external_age_bin_performance <- summarise_age_bins(all_imputed_predictions)
 
-  external_age_bin_performance <- do.call(
-    rbind,
-    lapply(
-      split(
-        all_predictions,
-        list(all_predictions$validation_method, all_predictions$age_bin),
-        drop = TRUE
-      ),
-      summarise_age_bin
-    )
-  )
-} else {
-  external_age_bin_performance <- data.frame()
-}
-
-if (nrow(all_imputed_predictions) > 0) {
-  all_imputed_predictions$age_bin <- cut(
-    all_imputed_predictions$age,
-    breaks = c(-Inf, 29, 44, 59, 74, Inf),
-    labels = c("14-29", "30-44", "45-59", "60-74", "75+"),
-    right = TRUE
-  )
-
-  imputed_external_age_bin_performance <- do.call(
-    rbind,
-    lapply(
-      split(
-        all_imputed_predictions,
-        list(all_imputed_predictions$validation_method, all_imputed_predictions$age_bin),
-        drop = TRUE
-      ),
-      summarise_age_bin
-    )
-  )
-} else {
-  imputed_external_age_bin_performance <- data.frame()
-}
-
-# Save CpG compatibility, external predictions and external performance outputs
 write.csv(
   compatibility_summary,
   "results/external_validation/validation_informed_clocks/gse42861_clock_compatibility.csv",

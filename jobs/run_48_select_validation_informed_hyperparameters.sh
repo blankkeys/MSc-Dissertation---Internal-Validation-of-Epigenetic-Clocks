@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=audit_validation_outputs
+#SBATCH --job-name=select_clock_hyperparameters
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=4G
+#SBATCH --mem=8G
 
-# Slurm job for 30_audit_validation_outputs.r
+# Slurm job for 48_select_validation_informed_hyperparameters.r
 
 set -euo pipefail
 
@@ -16,4 +16,4 @@ mkdir -p logs
 mkdir -p results/analysis
 
 apptainer exec --cleanenv containers/bioconductor_3_22.sif \
-  Rscript scripts/09_analysis/30_audit_validation_outputs.r
+  Rscript scripts/09_validation_informed_clocks/48_select_validation_informed_hyperparameters.r

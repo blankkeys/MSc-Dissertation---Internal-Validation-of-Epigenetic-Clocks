@@ -1,5 +1,6 @@
 # Helper functions for combining Slurm chunk outputs
 
+# helper function to find files matching a filename pattern and combine them into a single data frame
 read_validation_chunks <- function(pattern, expected_chunks) {
   files <- list.files(
     "results/internal_validation",
@@ -8,6 +9,7 @@ read_validation_chunks <- function(pattern, expected_chunks) {
   )
   files <- sort(files)
 
+  # prevent combining incomplete chunks by checking that the number of files matches the expected number of chunks
   if (length(files) != expected_chunks) {
     stop(
       "Expected ",
@@ -19,6 +21,7 @@ read_validation_chunks <- function(pattern, expected_chunks) {
     )
   }
 
+  # read all chunk CSV files and combine them into a single data frame
   chunk_data <- do.call(rbind, lapply(files, read.csv))
 
   check_alpha_values(chunk_data, "selected_alpha")
@@ -27,6 +30,8 @@ read_validation_chunks <- function(pattern, expected_chunks) {
   chunk_data
 }
 
+# helper function to check that the alpha values in the combined chunks are only those expected 0.25, 0.5, 0.75
+# ensure no old alpha values are present
 check_alpha_values <- function(chunk_data, column_name) {
   if (!column_name %in% names(chunk_data)) {
     return(invisible(NULL))
@@ -47,6 +52,7 @@ check_alpha_values <- function(chunk_data, column_name) {
   invisible(NULL)
 }
 
+# helper function to summarise performance metrics across all chunks
 summarise_validation_performance <- function(performance, count_name) {
   summary <- data.frame(
     input_cpgs = performance$input_cpgs[1],
@@ -74,7 +80,7 @@ summarise_validation_performance <- function(performance, count_name) {
     data.frame(count = nrow(performance)),
     summary
   )
-  names(summary)[1] <- count_name
+  names(summary)[1] <- count_name # turns into a clean summary table by letting the script name the first column properly
 
   summary
 }
