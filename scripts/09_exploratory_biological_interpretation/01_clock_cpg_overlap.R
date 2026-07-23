@@ -40,10 +40,8 @@ if (nrow(known_clock_cpgs) == 0) {
   stop("Known-clock CpG file is empty. Add published clock CpG lists and rerun")
 }
 
-message("Reading filtered CpG background")
 background_cpgs <- unique(rownames(readRDS(background_file)))
 
-message("Reading selected CpGs from validation-informed clocks")
 clock_coefficients <- read.csv(clock_coefficients_file, stringsAsFactors = FALSE)
 clock_coefficients <- clock_coefficients[clock_coefficients$cpg != "(Intercept)", ]
 
@@ -66,7 +64,6 @@ selected_sets <- split(clock_coefficients$cpg, clock_coefficients$selected_set)
 selected_sets <- lapply(selected_sets, unique)
 
 if (file.exists(cpg_frequency_file)) {
-  message("Adding stability-defined CpG sets")
   cpg_frequency <- read.csv(cpg_frequency_file, stringsAsFactors = FALSE)
 
   repeated_methods <- c(
@@ -195,48 +192,3 @@ write.csv(
   file.path(output_dir, "clock_cpg_overlap_testing_summary.csv"),
   row.names = FALSE
 )
-
-writeLines(
-  c(
-    "# Exploratory CpG overlap analysis",
-    "",
-    paste0("Known clock CpGs: ", known_clock_file),
-    paste0("Selected clock coefficients: ", clock_coefficients_file),
-    paste0("CpG stability file: ", cpg_frequency_file),
-    paste0("Filtered background: ", background_file),
-    paste0("Background CpGs: ", length(background_cpgs)),
-    "",
-    paste0("Total selected sets tested: ", length(selected_sets)),
-    paste0("Known clocks tested: ", length(known_sets)),
-    paste0("Total hypergeometric comparisons: ", nrow(overlap_summary)),
-    paste0("Table 14 comparisons shown: ", nrow(table14_overlap_summary)),
-    "BH correction was applied once across the complete set of hypergeometric comparisons",
-    "",
-    "Aggregate stable-set rule:",
-    paste(
-      "The 80 percent and 100 percent stable sets were created as unions of",
-      "method-specific stable CpGs across the five multi-model validation methods"
-    ),
-    paste0(
-      "- 80 percent stable set CpGs: ",
-      length(selected_sets[[stable_80_set]])
-    ),
-    paste0(
-      "- 100 percent stable set CpGs: ",
-      length(selected_sets[[stable_100_set]])
-    ),
-    "",
-    "Selected sets analysed:",
-    paste0("- ", names(selected_sets)),
-    "",
-    "Known clocks analysed:",
-    paste0("- ", names(known_sets)),
-    "",
-    "Interpretation warning:",
-    "Overlap supports biological plausibility but does not prove causal ageing biology",
-    "Limited overlap does not invalidate the model because different correlated CpGs can encode similar age-related methylation signal"
-  ),
-  file.path(output_dir, "exploratory_cpg_overlap_README.md")
-)
-
-message("CpG overlap analysis complete")
