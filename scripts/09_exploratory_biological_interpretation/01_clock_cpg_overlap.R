@@ -153,9 +153,52 @@ overlap_summary$bh_adjusted_p_value <- p.adjust(
   method = "BH"
 )
 
+table14_sets <- c(
+  "bootstrap_oob_informed",
+  "nested_cv_informed",
+  "repeated_80_20_informed",
+  "repeated_ten_fold_cv_informed",
+  "single_80_20_informed",
+  "ten_fold_cv_informed",
+  "stable_cpgs_selected_in_80_percent_models",
+  "stable_cpgs_selected_in_100_percent_models"
+)
+
+table14_overlap_summary <- overlap_summary[
+  overlap_summary$selected_set %in% table14_sets,
+]
+
+overlap_testing_summary <- data.frame(
+  selected_sets_tested = length(selected_sets),
+  known_clocks_tested = length(known_sets),
+  total_hypergeometric_tests = nrow(overlap_summary),
+  table14_selected_sets_shown = length(table14_sets),
+  table14_comparisons_shown = nrow(table14_overlap_summary),
+  benchmark_comparisons_not_shown = nrow(overlap_summary) -
+    nrow(table14_overlap_summary),
+  bh_correction_scope = "all hypergeometric tests in clock_cpg_overlap_summary.csv",
+  stable_set_rule = paste(
+    "union of method-specific CpGs reaching the threshold",
+    "within at least one multi-model validation method"
+  ),
+  stringsAsFactors = FALSE
+)
+
 write.csv(
   overlap_summary,
   file.path(output_dir, "clock_cpg_overlap_summary.csv"),
+  row.names = FALSE
+)
+
+write.csv(
+  table14_overlap_summary,
+  file.path(output_dir, "clock_cpg_overlap_table14_subset.csv"),
+  row.names = FALSE
+)
+
+write.csv(
+  overlap_testing_summary,
+  file.path(output_dir, "clock_cpg_overlap_testing_summary.csv"),
   row.names = FALSE
 )
 
@@ -177,6 +220,26 @@ writeLines(
     paste0("Filtered background: ", background_file),
     paste0("Background CpGs: ", length(background_cpgs)),
     "",
+    paste0("Total selected sets tested: ", length(selected_sets)),
+    paste0("Known clocks tested: ", length(known_sets)),
+    paste0("Total hypergeometric comparisons: ", nrow(overlap_summary)),
+    paste0("Table 14 comparisons shown: ", nrow(table14_overlap_summary)),
+    "BH correction was applied once across the complete set of hypergeometric comparisons",
+    "",
+    "Aggregate stable-set rule:",
+    paste(
+      "The 80 percent and 100 percent stable sets were created as unions of",
+      "method-specific stable CpGs across the five multi-model validation methods"
+    ),
+    paste0(
+      "- 80 percent stable set CpGs: ",
+      length(selected_sets[["stable_cpgs_selected_in_80_percent_models"]])
+    ),
+    paste0(
+      "- 100 percent stable set CpGs: ",
+      length(selected_sets[["stable_cpgs_selected_in_100_percent_models"]])
+    ),
+    "",
     "Selected sets analysed:",
     paste0("- ", names(selected_sets)),
     "",
@@ -195,10 +258,20 @@ writeLines(
     "# Dissertation Text Snippet",
     "",
     "## Methods",
-    "Overlap with established epigenetic clocks was assessed as an exploratory biological-context analysis. CpGs selected by the validation-informed clocks and stability-defined CpG sets were compared with published CpG lists from established epigenetic clocks. The filtered autosomal CpG set retained for modelling was used as the background universe because only these CpGs were available for model selection. For each comparison, overlap count, percentage overlap, Jaccard similarity, hypergeometric enrichment p-value and Benjamini-Hochberg adjusted p-value were calculated.",
+    "Overlap with established epigenetic clocks was assessed as an exploratory biological-context analysis. CpGs selected by the validation-informed clocks and stability-defined CpG sets were compared with published CpG lists from established epigenetic clocks. The filtered autosomal CpG set retained for modelling was used as the background universe because only these CpGs were available for model selection. For the exploratory established-clock overlap analysis, aggregate stable CpG sets were created by taking the union of method-specific stable CpGs across the five multi-model validation procedures. The 80 percent stable set included any CpG selected in at least 80 percent of fitted models within at least one validation method, while the 100 percent stable set included any CpG selected in every fitted model within at least one validation method. For each comparison, overlap count, percentage overlap, Jaccard similarity and hypergeometric enrichment p-value were calculated. The full exploratory analysis evaluated ten selected CpG sets against six established clocks, producing 60 hypergeometric comparisons. Benjamini-Hochberg correction was applied across the complete set of 60 tests.",
     "",
     "## Results Template",
-    "The strongest overlap was observed between [SELECTED_SET] and [KNOWN_CLOCK], with [N_OVERLAP] overlapping CpGs. This represented [PERCENT_SELECTED]% of selected CpGs and [PERCENT_CLOCK]% of the published clock CpGs available in the filtered background.",
+    "The strongest overlap was observed between [SELECTED_SET] and [KNOWN_CLOCK], with [N_OVERLAP] overlapping CpGs. This represented [PERCENT_SELECTED]% of selected CpGs and [PERCENT_CLOCK]% of the published clock CpGs available in the filtered background. All 48 comparisons presented in Table 14 remained statistically significant after Benjamini-Hochberg correction across the complete set of 60 tests.",
+    "",
+    "## Table Note",
+    paste0(
+      "Full selected-set ranges summarise results across the six validation-informed final clocks. ",
+      "The aggregate 80 percent and 100 percent stable sets were formed by taking the union of CpGs reaching the corresponding within-method selection-frequency threshold in at least one of the five multi-model validation procedures; these sets contained ",
+      length(selected_sets[["stable_cpgs_selected_in_80_percent_models"]]),
+      " and ",
+      length(selected_sets[["stable_cpgs_selected_in_100_percent_models"]]),
+      " CpGs, respectively. Table 14 presents 48 of the 60 comparisons performed; results for the two benchmark clocks are not shown."
+    ),
     "",
     "## Discussion Caution",
     "This analysis is descriptive. CpGs selected by elastic-net clocks are predictive features and should not be interpreted as necessarily causal ageing loci."
