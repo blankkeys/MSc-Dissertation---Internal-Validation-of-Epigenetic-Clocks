@@ -239,30 +239,4 @@ writeLines(
   file.path(output_dir, "exploratory_cpg_overlap_README.md")
 )
 
-writeLines(
-  c(
-    "# Dissertation Text Snippet",
-    "",
-    "## Methods",
-    "Overlap with established epigenetic clocks was assessed as an exploratory biological-context analysis. CpGs selected by the validation-informed clocks and stability-defined CpG sets were compared with published CpG lists from established epigenetic clocks. The filtered autosomal CpG set retained for modelling was used as the background universe because only these CpGs were available for model selection. For the exploratory established-clock overlap analysis, aggregate stable CpG sets were created by taking the union of method-specific stable CpGs across the five multi-model validation procedures. The 80 percent stable set included any CpG selected in at least 80 percent of fitted models within at least one validation method, while the 100 percent stable set included any CpG selected in every fitted model within at least one validation method. For each comparison, overlap count, percentage overlap, Jaccard similarity and hypergeometric enrichment p-value were calculated. The full exploratory analysis evaluated ten selected CpG sets against six established clocks, producing 60 hypergeometric comparisons. Benjamini-Hochberg correction was applied across the complete set of 60 tests.",
-    "",
-    "## Results Template",
-    "The strongest overlap was observed between [SELECTED_SET] and [KNOWN_CLOCK], with [N_OVERLAP] overlapping CpGs. This represented [PERCENT_SELECTED]% of selected CpGs and [PERCENT_CLOCK]% of the published clock CpGs available in the filtered background. All 48 comparisons presented in Table 14 remained statistically significant after Benjamini-Hochberg correction across the complete set of 60 tests.",
-    "",
-    "## Table Note",
-    paste0(
-      "Full selected-set ranges summarise results across the six validation-informed final clocks. ",
-      "The aggregate 80 percent and 100 percent stable sets were formed by taking the union of CpGs reaching the corresponding within-method selection-frequency threshold in at least one of the five multi-model validation procedures; these sets contained ",
-      length(selected_sets[[stable_80_set]]),
-      " and ",
-      length(selected_sets[[stable_100_set]]),
-      " CpGs, respectively. Table 14 presents 48 of the 60 comparisons performed; results for the two benchmark clocks are not shown."
-    ),
-    "",
-    "## Discussion Caution",
-    "This analysis is descriptive. CpGs selected by elastic-net clocks are predictive features and should not be interpreted as necessarily causal ageing loci."
-  ),
-  file.path(output_dir, "dissertation_text_snippet.md")
-)
-
 message("CpG overlap analysis complete")
