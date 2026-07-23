@@ -6,6 +6,8 @@ clock_coefficients_file <- "results/modelling/validation_informed_clocks/validat
 cpg_frequency_file <- "results/analysis/cpg_selection_frequency.csv"
 background_file <- "data/GSE87571/beta_matrix_age_model.rds"
 output_dir <- "results/exploratory_cpg_overlap"
+stable_80_set <- "stable_cpgs_selected_in_80_percent_models"
+stable_100_set <- "stable_cpgs_selected_in_100_percent_models"
 
 dir.create(dirname(known_clock_file), recursive = TRUE, showWarnings = FALSE)
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -45,15 +47,20 @@ message("Reading selected CpGs from validation-informed clocks")
 clock_coefficients <- read.csv(clock_coefficients_file, stringsAsFactors = FALSE)
 clock_coefficients <- clock_coefficients[clock_coefficients$cpg != "(Intercept)", ]
 
-clock_coefficients$selected_set <- clock_coefficients$validation_method
-clock_coefficients$selected_set[clock_coefficients$validation_method == "benchmark_alpha_0.5_cv_lambda"] <- "alpha_0.5_benchmark"
-clock_coefficients$selected_set[clock_coefficients$validation_method == "benchmark_alpha_0.25_cv_lambda"] <- "alpha_0.25_benchmark"
-clock_coefficients$selected_set[clock_coefficients$validation_method == "single_train_test_split"] <- "single_80_20_informed"
-clock_coefficients$selected_set[clock_coefficients$validation_method == "repeated_train_test_split"] <- "repeated_80_20_informed"
-clock_coefficients$selected_set[clock_coefficients$validation_method == "k_fold_cross_validation"] <- "ten_fold_cv_informed"
-clock_coefficients$selected_set[clock_coefficients$validation_method == "repeated_k_fold_cross_validation"] <- "repeated_ten_fold_cv_informed"
-clock_coefficients$selected_set[clock_coefficients$validation_method == "nested_cross_validation"] <- "nested_cv_informed"
-clock_coefficients$selected_set[clock_coefficients$validation_method == "bootstrap_oob"] <- "bootstrap_oob_informed"
+set_names <- c(
+  benchmark_alpha_0.5_cv_lambda = "alpha_0.5_benchmark",
+  benchmark_alpha_0.25_cv_lambda = "alpha_0.25_benchmark",
+  single_train_test_split = "single_80_20_informed",
+  repeated_train_test_split = "repeated_80_20_informed",
+  k_fold_cross_validation = "ten_fold_cv_informed",
+  repeated_k_fold_cross_validation = "repeated_ten_fold_cv_informed",
+  nested_cross_validation = "nested_cv_informed",
+  bootstrap_oob = "bootstrap_oob_informed"
+)
+
+clock_coefficients$selected_set <- unname(
+  set_names[clock_coefficients$validation_method]
+)
 
 selected_sets <- split(clock_coefficients$cpg, clock_coefficients$selected_set)
 selected_sets <- lapply(selected_sets, unique)
@@ -74,11 +81,11 @@ if (file.exists(cpg_frequency_file)) {
     cpg_frequency$validation_method %in% repeated_methods,
   ]
 
-  selected_sets[["stable_cpgs_selected_in_80_percent_models"]] <- unique(
+  selected_sets[[stable_80_set]] <- unique(
     cpg_frequency$cpg[cpg_frequency$selection_frequency >= 0.80]
   )
 
-  selected_sets[["stable_cpgs_selected_in_100_percent_models"]] <- unique(
+  selected_sets[[stable_100_set]] <- unique(
     cpg_frequency$cpg[cpg_frequency$selection_frequency == 1]
   )
 }
@@ -132,19 +139,6 @@ for (selected_set_name in names(selected_sets)) {
       )
     )
 
-    if (k > 0) {
-      comparison_name <- gsub(
-        "[^A-Za-z0-9]+",
-        "_",
-        paste(selected_set_name, clock_name, sep = "__")
-      )
-
-      write.csv(
-        data.frame(CpG = overlapping_cpgs),
-        file.path(output_dir, paste0("overlap_", comparison_name, ".csv")),
-        row.names = FALSE
-      )
-    }
   }
 }
 
@@ -160,8 +154,8 @@ table14_sets <- c(
   "repeated_ten_fold_cv_informed",
   "single_80_20_informed",
   "ten_fold_cv_informed",
-  "stable_cpgs_selected_in_80_percent_models",
-  "stable_cpgs_selected_in_100_percent_models"
+  stable_80_set,
+  stable_100_set
 )
 
 table14_overlap_summary <- overlap_summary[
@@ -202,14 +196,6 @@ write.csv(
   row.names = FALSE
 )
 
-write.table(
-  overlap_summary,
-  file.path(output_dir, "clock_cpg_overlap_summary.tsv"),
-  sep = "\t",
-  quote = FALSE,
-  row.names = FALSE
-)
-
 writeLines(
   c(
     "# Exploratory CpG overlap analysis",
@@ -233,11 +219,11 @@ writeLines(
     ),
     paste0(
       "- 80 percent stable set CpGs: ",
-      length(selected_sets[["stable_cpgs_selected_in_80_percent_models"]])
+      length(selected_sets[[stable_80_set]])
     ),
     paste0(
       "- 100 percent stable set CpGs: ",
-      length(selected_sets[["stable_cpgs_selected_in_100_percent_models"]])
+      length(selected_sets[[stable_100_set]])
     ),
     "",
     "Selected sets analysed:",
@@ -267,9 +253,9 @@ writeLines(
     paste0(
       "Full selected-set ranges summarise results across the six validation-informed final clocks. ",
       "The aggregate 80 percent and 100 percent stable sets were formed by taking the union of CpGs reaching the corresponding within-method selection-frequency threshold in at least one of the five multi-model validation procedures; these sets contained ",
-      length(selected_sets[["stable_cpgs_selected_in_80_percent_models"]]),
+      length(selected_sets[[stable_80_set]]),
       " and ",
-      length(selected_sets[["stable_cpgs_selected_in_100_percent_models"]]),
+      length(selected_sets[[stable_100_set]]),
       " CpGs, respectively. Table 14 presents 48 of the 60 comparisons performed; results for the two benchmark clocks are not shown."
     ),
     "",
